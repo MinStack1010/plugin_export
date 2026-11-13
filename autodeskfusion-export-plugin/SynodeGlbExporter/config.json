@@ -1,0 +1,9 @@
+{
+  "unit_scale": 0.01,
+  "upload_url": "",
+  "api_key": "API_KEY_DEV",
+  "upload_timeout_seconds": 120,
+  "default_file_name": "fusion-export.glb",
+  "mesh_quality": "high",
+  "up_axis": "auto"
+}

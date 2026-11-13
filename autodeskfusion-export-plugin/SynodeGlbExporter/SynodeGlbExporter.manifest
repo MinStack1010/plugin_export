@@ -1,0 +1,13 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "addin",
+	"id": "6f1d6a0e-3c1b-4a53-9a0e-6b7c2f7e9b21",
+	"author": "Synode",
+	"description": {
+		"": "Export the active Fusion design (component hierarchy, transforms, solid bodies and appearances) to GLB, equivalent to the Synode SOLIDWORKS GLB exporter."
+	},
+	"version": "1.0.0",
+	"runOnStartup": false,
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}
