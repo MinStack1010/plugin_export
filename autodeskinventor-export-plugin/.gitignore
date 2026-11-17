@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+dist/
+*.dll
+*.pdb
+*.exe
+
+# Test output
+test-output/
+TestResults/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.swp
+
+# Logs / temp
+*.log
+*.synode-tmp-*.glb

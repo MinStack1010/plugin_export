@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Integration test: điều khiển Autodesk Inventor 2027 THẬT qua COM (Inventor.Application),
+    export Part + Assembly bằng đúng GlbExportService của add-in, kiểm tra GLB bằng GlbValidator
+    và bằng một validator độc lập (SharpGLTF.Core, chế độ Strict).
+    Chạy: tests\run_integration.ps1 (KHÔNG chạy trong build.ps1 vì cần Inventor + license).
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(SynodeTargetFramework)</TargetFramework>
+    <AssemblyName>SynodeInventor.IntegrationTests</AssemblyName>
+    <RootNamespace>Synode.Inventor.IntegrationTests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\SynodeInventor.Core\*.cs" Link="Core\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\SynodeInventor.AddIn\AddInIds.cs" Link="AddIn\AddInIds.cs" />
+    <Compile Include="..\..\src\SynodeInventor.AddIn\ComHelper.cs" Link="AddIn\ComHelper.cs" />
+    <Compile Include="..\..\src\SynodeInventor.AddIn\Services\*.cs" Link="AddIn\Services\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Autodesk.Inventor.Interop">
+      <HintPath>$(InventorBinDir)\Public Assemblies\Autodesk.Inventor.Interop.dll</HintPath>
+      <Private>true</Private>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="stdole">
+      <HintPath>$(InventorBinDir)\stdole.dll</HintPath>
+      <Private>true</Private>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+    <PackageReference Include="SharpGLTF.Core" Version="1.0.6" />
+  </ItemGroup>
+
+</Project>

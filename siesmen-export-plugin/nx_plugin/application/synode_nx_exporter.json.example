@@ -1,0 +1,18 @@
+{
+  "default_file_name": "nx-export.glb",
+  "unit_scale": 1.0,
+  "z_up_to_y_up": false,
+  "chord_tolerance_mm": 0.05,
+  "angular_tolerance_deg": 15.0,
+  "skip_blanked_bodies": true,
+  "skip_hidden_layer_bodies": true,
+  "skip_sheet_bodies": true,
+  "include_root_part_bodies": true,
+  "load_partially_loaded_parts": true,
+  "component_name_style": "path",
+  "default_metallic": 0.0,
+  "default_roughness": 0.0,
+  "share_instance_meshes": false,
+  "validate_transforms": true,
+  "log_directory": ""
+}

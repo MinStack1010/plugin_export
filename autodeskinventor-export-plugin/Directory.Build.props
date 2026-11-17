@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    Thiết lập chung cho mọi project.
+
+    Target framework:
+      Inventor 2027 chạy add-in managed trên .NET 10 (Bin\ClrAddinLoader.runtimeconfig.json: "tfm": "net10.0").
+      * Có .NET SDK 10.x  -> build net10.0-windows (khớp runtime của Inventor 2027).
+      * Chỉ có SDK 8/9    -> build net8.0-windows. Assembly net8.0 được .NET 10 runtime nạp bình thường
+                             (tương thích tiến). build.ps1 tự chọn và in cảnh báo.
+      Có thể ép bằng: dotnet build -p:SynodeTargetFramework=net10.0-windows
+  -->
+  <PropertyGroup>
+    <!-- NETCoreSdkVersion chưa có ở thời điểm này; MSBuild 18.x đi kèm .NET SDK 10. build.ps1 luôn truyền giá trị tường minh. -->
+    <SynodeTargetFramework Condition="'$(SynodeTargetFramework)' == '' and $([MSBuild]::VersionGreaterThanOrEquals('$(MSBuildVersion)', '18.0'))">net10.0-windows</SynodeTargetFramework>
+    <SynodeTargetFramework Condition="'$(SynodeTargetFramework)' == ''">net8.0-windows</SynodeTargetFramework>
+
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Version>1.0.0</Version>
+    <Company>Synode</Company>
+    <Product>Synode Inventor Exporter</Product>
+    <Copyright>Synode</Copyright>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- Thư mục cài Inventor 2027 (chỉ dùng lúc build để tham chiếu interop). build.ps1 truyền giá trị đọc từ registry. -->
+    <InventorBinDir Condition="'$(InventorBinDir)' == ''">$(ProgramFiles)\Autodesk\Inventor 2027\Bin</InventorBinDir>
+  </PropertyGroup>
+
+</Project>

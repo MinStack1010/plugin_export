@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Reference harness: compiles the ORIGINAL SOLIDWORKS plugin writer sources
+    (linked read-only, never copied or modified) together with SharpGLTF 1.0.6
+    so a synthetic scene can be written by exactly the same code path as the
+    SOLIDWORKS add-in (CoordinateConverter + GltfSceneWriter).
+    The output is compared with the Python writer of the NX plugin.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>ReferenceSw</RootNamespace>
+    <SwPluginDir Condition="'$(SwPluginDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\solidworks-export-plugin\</SwPluginDir>
+    <SharpGltfLib Condition="'$(SharpGltfLib)' == ''">net8.0</SharpGltfLib>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SwPluginDir)Export\ExtractedScene.cs" Link="SwSources\ExtractedScene.cs" />
+    <Compile Include="$(SwPluginDir)Export\ExtractedNode.cs" Link="SwSources\ExtractedNode.cs" />
+    <Compile Include="$(SwPluginDir)Export\ExtractedMesh.cs" Link="SwSources\ExtractedMesh.cs" />
+    <Compile Include="$(SwPluginDir)Export\ExtractedMaterial.cs" Link="SwSources\ExtractedMaterial.cs" />
+    <Compile Include="$(SwPluginDir)Export\ExportOptions.cs" Link="SwSources\ExportOptions.cs" />
+    <Compile Include="$(SwPluginDir)Export\CoordinateConverter.cs" Link="SwSources\CoordinateConverter.cs" />
+    <Compile Include="$(SwPluginDir)Export\GltfSceneWriter.cs" Link="SwSources\GltfSceneWriter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SharpGLTF.Core">
+      <HintPath>$(SwPluginDir)packages\SharpGLTF.Core.1.0.6\lib\$(SharpGltfLib)\SharpGLTF.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpGLTF.Runtime">
+      <HintPath>$(SwPluginDir)packages\SharpGLTF.Runtime.1.0.6\lib\$(SharpGltfLib)\SharpGLTF.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpGLTF.Toolkit">
+      <HintPath>$(SwPluginDir)packages\SharpGLTF.Toolkit.1.0.6\lib\$(SharpGltfLib)\SharpGLTF.Toolkit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

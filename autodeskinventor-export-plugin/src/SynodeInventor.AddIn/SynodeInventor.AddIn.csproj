@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Synode Inventor Exporter - add-in cho Autodesk Inventor Professional 2027.
+    Inventor nạp add-in qua file manifest .addin (KHÔNG cần RegAsm / đăng ký COM vào registry).
+    Đầu ra: MỘT DLL duy nhất SynodeInventor.AddIn.dll (mã nguồn Core được biên dịch kèm).
+    Không dùng NuGet package nào, không phụ thuộc WinForms/WPF.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>$(SynodeTargetFramework)</TargetFramework>
+    <AssemblyName>SynodeInventor.AddIn</AssemblyName>
+    <RootNamespace>Synode.Inventor.AddIn</RootNamespace>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\SynodeInventor.Core\*.cs" Link="Core\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Interop do Inventor 2027 cài sẵn; Inventor tự cung cấp lúc chạy nên Private=false (không copy). -->
+    <Reference Include="Autodesk.Inventor.Interop">
+      <HintPath>$(InventorBinDir)\Public Assemblies\Autodesk.Inventor.Interop.dll</HintPath>
+      <Private>false</Private>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="stdole">
+      <HintPath>$(InventorBinDir)\stdole.dll</HintPath>
+      <Private>false</Private>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Synode.InventorExporter.addin.template" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

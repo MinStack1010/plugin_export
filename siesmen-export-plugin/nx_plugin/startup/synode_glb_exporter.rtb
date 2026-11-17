@@ -1,0 +1,20 @@
+!
+!  Synode NX GLB Exporter - ribbon tab "Synode"
+!
+!  Loaded from %UGII_USER_DIR%\startup.  The button SYNODE_EXPORT_GLB is
+!  defined (label, bitmap, ACTIONS synode_export_glb.py) in
+!  synode_glb_exporter.men; this file only places it on a ribbon tab.
+!  Syntax follows NX 2606 UGII\menus\rbn_kpi.rtb (VERSION 170).
+!  If the tab does not appear automatically, right-click the ribbon and enable
+!  the "Synode" tab, or use Menu > Synode > Export to GLB.
+!
+
+TITLE  Synode
+VERSION 170
+
+BEGIN_GROUP SYNODE_RBN_EXPORT_GROUP
+LABEL Synode GLB Exporter
+
+    BUTTON SYNODE_EXPORT_GLB
+
+END_GROUP
