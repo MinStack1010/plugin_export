@@ -5,10 +5,10 @@ using Inv = global::Inventor;
 
 namespace Synode.Inventor.AddIn.Services
 {
-    /// <summary>Hỏi người dùng nơi lưu file .glb (hộp thoại Save của chính Inventor).</summary>
+    /// <summary>Asks the user where to save the .glb file (Inventor's own Save dialog).</summary>
     internal interface ISaveFileDialogService
     {
-        /// <returns>Đường dẫn được chọn, hoặc null nếu người dùng huỷ.</returns>
+        /// <returns>The selected path, or null if the user cancelled.</returns>
         string? AskSavePath(string suggestedFileName, string initialDirectory);
     }
 
@@ -35,7 +35,7 @@ namespace Synode.Inventor.AddIn.Services
                 dialog.FileName = suggestedFileName;
                 dialog.OptionsEnabled = false;
                 dialog.MultiSelectEnabled = false;
-                // CancelError = true: khi người dùng bấm Cancel, ShowSave ném COMException.
+                // CancelError = true: when the user clicks Cancel, ShowSave throws a COMException.
                 dialog.CancelError = true;
                 try
                 {

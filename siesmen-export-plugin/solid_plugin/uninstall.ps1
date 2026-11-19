@@ -1,13 +1,13 @@
 ﻿<#
 .SYNOPSIS
-    Gỡ đăng ký COM add-in Synode Exporter khỏi Solid Edge 2026 (CẦN XÁC NHẬN).
+    Unregisters the Synode Exporter COM add-in from Solid Edge 2026 (REQUIRES CONFIRMATION).
 .DESCRIPTION
-    Chỉ xóa đúng 2 khóa của Synode Exporter (ở HKLM và/hoặc HKCU, view 64-bit):
+    Deletes only the 2 Synode Exporter keys (in HKLM and/or HKCU, 64-bit view):
       SOFTWARE\Classes\CLSID\{42B484DA-1593-41C3-9623-1BFAA4DA645C}
       SOFTWARE\Classes\SynodeExporter.SolidEdge.AddIn
-    Không xóa file DLL, không chạm vào add-in khác hay cấu hình Siemens.
+    Does not delete the DLL file and does not touch other add-ins or Siemens settings.
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File .\uninstall.ps1            # HKLM + HKCU (HKLM cần Administrator)
+    powershell -ExecutionPolicy Bypass -File .\uninstall.ps1            # HKLM + HKCU (HKLM requires Administrator)
     powershell -ExecutionPolicy Bypass -File .\uninstall.ps1 -Scope CurrentUser
 #>
 [CmdletBinding()]
@@ -21,7 +21,7 @@ $ErrorActionPreference = 'Stop'
 $here = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 . (Join-Path $here 'scripts\RegistryLayout.ps1')
 
-if (-not [Environment]::Is64BitProcess) { throw 'Hãy chạy bằng Windows PowerShell 64-bit.' }
+if (-not [Environment]::Is64BitProcess) { throw 'Run this script in 64-bit Windows PowerShell.' }
 
 $scopes = if ($Scope -eq 'All') { @('Machine', 'CurrentUser') } else { @($Scope) }
 $targets = @()
@@ -36,24 +36,25 @@ foreach ($s in $scopes) {
 }
 
 if ($targets.Count -eq 0) {
-    Write-Host 'Synode Exporter chưa được đăng ký - không có gì để gỡ.' -ForegroundColor Yellow
+    Write-Host 'Synode Exporter is not registered - nothing to remove.' -ForegroundColor Yellow
     return
 }
 
-Write-Host 'Các khóa sẽ bị XÓA (kèm khóa con):' -ForegroundColor Cyan
+Write-Host 'Keys that will be DELETED (including subkeys):' -ForegroundColor Cyan
 $targets | ForEach-Object { Write-Host "  $(Get-SynodeHiveName $_.Scope)\$($_.Key)" }
-if ($DryRun) { Write-Host 'DryRun: không thay đổi registry.' -ForegroundColor Yellow; return }
+if ($DryRun) { Write-Host 'DryRun: the registry was not modified.' -ForegroundColor Yellow; return }
 
 if (($targets | Where-Object Scope -eq 'Machine') -and -not (Test-SynodeIsAdmin)) {
-    throw 'Xóa khóa HKLM cần quyền Administrator. Mở PowerShell bằng "Run as administrator" (hoặc dùng -Scope CurrentUser).'
+    throw 'Deleting HKLM keys requires Administrator rights. Open PowerShell with "Run as administrator" (or use -Scope CurrentUser).'
 }
 if (-not $Force) {
-    $answer = Read-Host 'Xác nhận xóa? (Y/N)'
-    if ($answer -notmatch '^(y|yes|c|co)$') { Write-Host 'Đã hủy.' -ForegroundColor Yellow; return }
+    $answer = Read-Host 'Confirm deletion? (Y/N)'
+    # 'c' / 'co' are also accepted as "yes" for backward compatibility.
+    if ($answer -notmatch '^(y|yes|c|co)$') { Write-Host 'Cancelled.' -ForegroundColor Yellow; return }
 }
 
 foreach ($t in $targets) {
     $base = Get-SynodeHive $t.Scope
     try { $base.DeleteSubKeyTree($t.Key, $false) } finally { $base.Close() }
 }
-Write-Host 'ĐÃ GỠ đăng ký Synode Exporter. Khởi động lại Solid Edge để áp dụng.' -ForegroundColor Green
+Write-Host 'Synode Exporter UNREGISTERED. Restart Solid Edge to apply the change.' -ForegroundColor Green

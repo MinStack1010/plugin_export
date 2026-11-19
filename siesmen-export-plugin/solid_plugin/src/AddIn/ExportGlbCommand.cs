@@ -7,7 +7,7 @@ using SEF = global::SolidEdge.Framework.Interop;
 
 namespace SynodeExporter.AddIn
 {
-    /// <summary>Bọc HWND cửa sổ chính Solid Edge làm owner cho hộp thoại.</summary>
+    /// <summary>Wraps the HWND of the Solid Edge main window as the owner of dialogs.</summary>
     internal sealed class Win32Window : IWin32Window
     {
         public Win32Window(IntPtr handle)
@@ -31,8 +31,8 @@ namespace SynodeExporter.AddIn
     }
 
     /// <summary>
-    /// Lệnh "Export to GLB" - tương đương PluginSynode.ExportGlbCommand (SW):
-    /// hộp thoại lưu file -> đọc mô hình -> chuyển tọa độ -> ghi GLB -> thông báo.
+    /// "Export to GLB" command - equivalent to PluginSynode.ExportGlbCommand (SW):
+    /// save file dialog -> read model -> convert coordinates -> write GLB -> notify.
     /// </summary>
     public static class ExportGlbCommand
     {
@@ -55,7 +55,7 @@ namespace SynodeExporter.AddIn
 
                 var options = new ExportOptions
                 {
-                    // API Solid Edge trả về mét = đơn vị của glTF (giống UnitScale = 1 của plugin SW).
+                    // The Solid Edge API returns meters = the glTF unit (same as UnitScale = 1 in the SW plugin).
                     UnitScale = 1f
                 };
 
@@ -136,7 +136,7 @@ namespace SynodeExporter.AddIn
             }
             catch
             {
-                // Thanh trạng thái chỉ để hiển thị tiến trình.
+                // The status bar is only used to display progress.
             }
         }
     }

@@ -1,17 +1,17 @@
 <Project>
 
   <!--
-    Thiết lập chung cho mọi project.
+    Common settings for all projects.
 
     Target framework:
-      Inventor 2027 chạy add-in managed trên .NET 10 (Bin\ClrAddinLoader.runtimeconfig.json: "tfm": "net10.0").
-      * Có .NET SDK 10.x  -> build net10.0-windows (khớp runtime của Inventor 2027).
-      * Chỉ có SDK 8/9    -> build net8.0-windows. Assembly net8.0 được .NET 10 runtime nạp bình thường
-                             (tương thích tiến). build.ps1 tự chọn và in cảnh báo.
-      Có thể ép bằng: dotnet build -p:SynodeTargetFramework=net10.0-windows
+      Inventor 2027 hosts managed add-ins on .NET 10 (Bin\ClrAddinLoader.runtimeconfig.json: "tfm": "net10.0").
+      * .NET SDK 10.x installed -> build net10.0-windows (matches the Inventor 2027 runtime).
+      * Only SDK 8/9 installed  -> build net8.0-windows. A net8.0 assembly loads normally on the .NET 10 runtime
+                                   (forward compatible). build.ps1 picks the framework and prints a warning.
+      To force a framework: dotnet build -p:SynodeTargetFramework=net10.0-windows
   -->
   <PropertyGroup>
-    <!-- NETCoreSdkVersion chưa có ở thời điểm này; MSBuild 18.x đi kèm .NET SDK 10. build.ps1 luôn truyền giá trị tường minh. -->
+    <!-- NETCoreSdkVersion is not available at this point; MSBuild 18.x ships with .NET SDK 10. build.ps1 always passes an explicit value. -->
     <SynodeTargetFramework Condition="'$(SynodeTargetFramework)' == '' and $([MSBuild]::VersionGreaterThanOrEquals('$(MSBuildVersion)', '18.0'))">net10.0-windows</SynodeTargetFramework>
     <SynodeTargetFramework Condition="'$(SynodeTargetFramework)' == ''">net8.0-windows</SynodeTargetFramework>
 
@@ -27,7 +27,7 @@
     <Product>Synode Inventor Exporter</Product>
     <Copyright>Synode</Copyright>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <!-- Thư mục cài Inventor 2027 (chỉ dùng lúc build để tham chiếu interop). build.ps1 truyền giá trị đọc từ registry. -->
+    <!-- Inventor 2027 installation folder (used only at build time to reference the interop assembly). build.ps1 passes the value read from the registry. -->
     <InventorBinDir Condition="'$(InventorBinDir)' == ''">$(ProgramFiles)\Autodesk\Inventor 2027\Bin</InventorBinDir>
   </PropertyGroup>
 

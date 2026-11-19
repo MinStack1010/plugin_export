@@ -11,7 +11,7 @@ namespace Synode.Inventor.AddIn.Services
         Assembly
     }
 
-    /// <summary>Tài liệu Inventor đủ điều kiện export.</summary>
+    /// <summary>An Inventor document that is eligible for export.</summary>
     internal sealed class ExportableDocument
     {
         public ExportableDocument(Inv.Document document, ExportDocumentKind kind, string fullFileName, string displayName, int itemCount)
@@ -28,7 +28,7 @@ namespace Synode.Inventor.AddIn.Services
         public string FullFileName { get; }
         public string DisplayName { get; }
 
-        /// <summary>Part: số solid/surface body (+ mesh feature set); Assembly: số occurrence cấp cao nhất.</summary>
+        /// <summary>Part: number of solid/surface bodies (+ mesh feature sets); Assembly: number of top-level occurrences.</summary>
         public int ItemCount { get; }
 
         public string Describe() =>
@@ -36,7 +36,7 @@ namespace Synode.Inventor.AddIn.Services
             (FullFileName.Length == 0 ? " [unsaved]" : string.Empty);
     }
 
-    /// <summary>Đọc tài liệu đang mở trong Inventor và kiểm tra điều kiện export.</summary>
+    /// <summary>Reads the active document in Inventor and checks whether it can be exported.</summary>
     internal sealed class InventorDocumentService
     {
         private readonly Inv.Application _app;

@@ -13,7 +13,7 @@ if (-not $Root) { $Root = Split-Path -Parent $here }
 
 $bad = 0
 $files = Get-ChildItem -LiteralPath $Root -Filter '*.ps1' -Recurse |
-    Where-Object { $_.FullName -notmatch '\\(bin|obj|dist|test-output)\\' }
+    Where-Object { $_.FullName -notmatch '\\(bin|obj|dist)\\' }
 foreach ($f in $files) {
     $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
     $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)

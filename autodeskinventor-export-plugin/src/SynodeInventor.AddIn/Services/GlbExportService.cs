@@ -24,9 +24,9 @@ namespace Synode.Inventor.AddIn.Services
     }
 
     /// <summary>
-    /// Export GLB bằng translator glTF GỐC của Inventor 2027 (TranslatorAddIn.SaveCopyAs).
-    /// Quy trình: kiểm tra đường dẫn -> lấy translator -> SaveCopyAs ra file tạm (.glb) cùng thư mục ->
-    /// kiểm tra GLB bằng GlbValidator -> thay thế file đích. File tạm luôn được dọn khi lỗi.
+    /// Exports GLB using the NATIVE glTF translator of Inventor 2027 (TranslatorAddIn.SaveCopyAs).
+    /// Flow: check path -> get translator -> SaveCopyAs to a temporary file (.glb) in the same folder ->
+    /// validate the GLB with GlbValidator -> replace the target file. The temporary file is always cleaned up on failure.
     /// </summary>
     internal sealed class GlbExportService
     {
@@ -72,7 +72,7 @@ namespace Synode.Inventor.AddIn.Services
                 medium.FileName = tempPath;
 
                 bool hasOptions = translator.HasSaveCopyAsOptions[document, context, options];
-                // Chỉ ghi log các tuỳ chọn mặc định; KHÔNG đặt tuỳ chọn chưa được Autodesk công bố.
+                // Only log the default options; do NOT set options that Autodesk has not documented.
                 _log.Info("glTF translator options (" + (hasOptions ? "has options" : "no options") + "): " + DescribeOptions(options));
 
                 try
@@ -119,7 +119,7 @@ namespace Synode.Inventor.AddIn.Services
             }
         }
 
-        /// <summary>Lấy translator glTF theo ClassId đọc từ manifest của Inventor; kích hoạt nếu chưa nạp.</summary>
+        /// <summary>Gets the glTF translator by the ClassId read from Inventor's manifest; activates it if not loaded yet.</summary>
         private Inv.TranslatorAddIn GetGltfTranslator()
         {
             Inv.ApplicationAddIn addIn;
@@ -185,7 +185,7 @@ namespace Synode.Inventor.AddIn.Services
             return sb.ToString();
         }
 
-        /// <summary>Nếu translator lỡ ghi ra .gltf thay vì .glb thì báo rõ (và không đổi tên giả mạo).</summary>
+        /// <summary>If the translator wrote a .gltf instead of a .glb, report it clearly (and do not fake it by renaming).</summary>
         private static string? FindUnexpectedOutput(string tempPath)
         {
             string gltf = Path.ChangeExtension(tempPath, ".gltf");

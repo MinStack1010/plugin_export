@@ -420,9 +420,9 @@ namespace PluginSynode.Export
                 DSPBRMaterial dspbr = renderMaterial.GetDSPBRMaterial();
                 return ConvertDspbrMaterial(dspbr, name);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                // Logger.Log($"DSPBR extraction failed for '{name}': {e}");
+                // Appearances without readable DSPBR data fall back to the next material source.
                 return null;
             }
         }
@@ -717,9 +717,9 @@ namespace PluginSynode.Export
                 int result = _swApp.IsSame(first, second);
                 return result == 1;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                // Logger.Log($"Entity comparison failed: {e.Message}");
+                // Treat entities that SOLIDWORKS cannot compare as different.
                 return false;
             }
         }

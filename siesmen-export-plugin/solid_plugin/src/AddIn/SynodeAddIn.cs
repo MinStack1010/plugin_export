@@ -7,12 +7,12 @@ using SEF = global::SolidEdge.Framework.Interop;
 namespace SynodeExporter.AddIn
 {
     /// <summary>
-    /// COM add-in Solid Edge "Synode Exporter".
+    /// Solid Edge COM add-in "Synode Exporter".
     ///
-    /// Solid Edge tạo đối tượng này qua CLSID đăng ký trong registry (Implemented
-    /// Category {26B1D2D1-2B03-11d2-B589-080036E8B802}), gọi OnConnection khi add-in
-    /// được bật trong Add-In Manager, OnConnectToEnvironment cho từng môi trường
-    /// đăng ký (Part, Sheet Metal, Assembly) và OnDisconnection khi tắt/thoát.
+    /// Solid Edge creates this object through the CLSID registered in the registry (Implemented
+    /// Category {26B1D2D1-2B03-11d2-B589-080036E8B802}), calls OnConnection when the add-in
+    /// is enabled in the Add-In Manager, OnConnectToEnvironment for each registered
+    /// environment (Part, Sheet Metal, Assembly) and OnDisconnection when it is disabled or Solid Edge exits.
     /// </summary>
     [ComVisible(true)]
     [Guid(SolidEdgeIds.AddInClsid)]
@@ -20,13 +20,13 @@ namespace SynodeExporter.AddIn
     [ClassInterface(ClassInterfaceType.None)]
     public sealed class SynodeAddIn : SEF.ISolidEdgeAddIn
     {
-        /// <summary>ID lệnh nội bộ của "Export to GLB".</summary>
+        /// <summary>Internal command ID of "Export to GLB".</summary>
         public const int ExportGlbCommandId = 1;
 
-        /// <summary>Tăng giá trị này khi thay đổi giao diện để Solid Edge tạo lại nút (bFirstTime = true).</summary>
+        /// <summary>Increment this value when the UI changes so that Solid Edge recreates the button (bFirstTime = true).</summary>
         public const int GuiVersion = 1;
 
-        /// <summary>ID tài nguyên RT_BITMAP trong DLL (scripts\New-IconResource.ps1).</summary>
+        /// <summary>RT_BITMAP resource IDs in the DLL (scripts\New-IconResource.ps1).</summary>
         public const int BitmapMedium = 101;
         public const int BitmapLarge = 102;
 
@@ -71,7 +71,7 @@ namespace SynodeExporter.AddIn
                 }
                 Logger.Info("OnConnectToEnvironment " + EnvCatID + " (first time: " + bFirstTime + ")");
 
-                // Chuỗi lệnh: "<tên nội bộ>\n<nhãn>\n<tooltip>\n<mô tả>".
+                // Command string: "<internal name>\n<caption>\n<tooltip>\n<description>".
                 Array commandNames = new string[]
                 {
                     "SynodeExporter_ExportGlb\n" + CommandCaption + "\n" + CommandTooltip + "\n" + CommandCaption
@@ -91,7 +91,7 @@ namespace SynodeExporter.AddIn
                     ref commandNames,
                     ref commandIds);
 
-                // Solid Edge trả về ID lệnh lúc chạy trong mảng; chấp nhận cả ID nội bộ lẫn ID lúc chạy.
+                // Solid Edge returns the runtime command IDs in the array; accept both the internal and the runtime IDs.
                 foreach (object id in commandIds)
                 {
                     _exportCommandIds.Add(Convert.ToInt32(id));
@@ -111,7 +111,7 @@ namespace SynodeExporter.AddIn
             }
             catch (Exception ex)
             {
-                // Không làm sập Solid Edge nếu không tạo được giao diện.
+                // Never crash Solid Edge if the UI cannot be created.
                 Logger.Error("OnConnectToEnvironment failed for " + EnvCatID, ex);
             }
         }
@@ -164,7 +164,7 @@ namespace SynodeExporter.AddIn
 
         private void OnCommandUpdateUI(int CommandID, ref int CommandFlags, out string MenuItemText, ref int BitmapID)
         {
-            // [out] BSTR theo type library: trả lại đúng nhãn của lệnh.
+            // [out] BSTR per the type library: return the command caption.
             MenuItemText = CommandCaption;
             if (_exportCommandIds.Contains(CommandID))
             {

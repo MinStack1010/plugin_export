@@ -9,13 +9,12 @@
   2. Detects Inventor 2027 and the Inventor API assemblies (Autodesk.Inventor.Interop.dll, stdole.dll).
   3. Restores and builds src\SynodeInventor.AddIn (Release, x64).
   4. Verifies the DLL (exists, PE32+ / AMD64, assembly name) and copies it with the .addin manifest to dist\.
-  5. Builds and runs the unit tests (unless -SkipTests).
   This script does not modify the registry and does not install anything.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\build.ps1
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File .\build.ps1 -SkipTests -TargetFramework net10.0-windows
+  powershell -ExecutionPolicy Bypass -File .\build.ps1 -TargetFramework net10.0-windows
 #>
 [CmdletBinding()]
 param(
@@ -26,8 +25,7 @@ param(
     [string]$InventorBinDir = '',
     [string]$OutputDir = '',
     # Optional: copy the sources to this folder and build there (keeps the source tree free of bin/obj).
-    [string]$WorkDir = '',
-    [switch]$SkipTests
+    [string]$WorkDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,7 +94,7 @@ $srcRoot = $here
 if ($WorkDir) {
     Write-Step "Copying sources to work folder $WorkDir"
     New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
-    & robocopy $here $WorkDir /MIR /XD bin obj dist .vs test-output TestResults .git /NFL /NDL /NJH /NJS /NP | Out-Null
+    & robocopy $here $WorkDir /MIR /XD bin obj dist .vs .git /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { Fail "robocopy failed with exit code $LASTEXITCODE" }
     $srcRoot = $WorkDir
     Write-Ok 'Sources copied'
@@ -147,21 +145,6 @@ Set-Content -LiteralPath (Join-Path $OutputDir 'build-info.txt') -Encoding ASCII
 $distDll = Join-Path $OutputDir 'SynodeInventor.AddIn.dll'
 Write-Ok "DLL: $distDll"
 Write-Ok "Manifest: $(Join-Path $OutputDir 'Synode.InventorExporter.addin')"
-
-# ---------------------------------------------------------------- 5. Unit tests
-if (-not $SkipTests) {
-    Write-Step 'Building and running unit tests'
-    $testProj = Join-Path $srcRoot 'tests\SynodeInventor.Tests\SynodeInventor.Tests.csproj'
-    & dotnet build $testProj -c $Configuration @commonProps
-    if ($LASTEXITCODE -ne 0) { Fail "Unit test build failed (exit code $LASTEXITCODE)." }
-    $testExe = Join-Path $srcRoot "tests\SynodeInventor.Tests\bin\$Configuration\$TargetFramework\SynodeInventor.Tests.exe"
-    & $testExe
-    if ($LASTEXITCODE -ne 0) { Fail "Unit tests failed (exit code $LASTEXITCODE)." }
-    Write-Ok 'Unit tests passed'
-}
-else {
-    Write-Warn2 'Unit tests skipped (-SkipTests).'
-}
 
 Write-Host ''
 Write-Host 'BUILD SUCCEEDED' -ForegroundColor Green

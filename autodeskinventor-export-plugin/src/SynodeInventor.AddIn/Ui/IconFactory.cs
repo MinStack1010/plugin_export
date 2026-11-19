@@ -5,9 +5,9 @@ using Synode.Inventor.Core;
 namespace Synode.Inventor.AddIn.Ui
 {
     /// <summary>
-    /// Tạo icon dạng stdole.IPictureDisp (kiểu Inventor yêu cầu cho ControlDefinition) từ pixel
-    /// do <see cref="IconRenderer"/> vẽ: GDI CreateDIBSection (32bpp) + OleCreatePictureIndirect.
-    /// Thất bại => trả về null và nút vẫn hiển thị bằng chữ.
+    /// Creates an icon as stdole.IPictureDisp (the type Inventor requires for a ControlDefinition) from the pixels
+    /// drawn by <see cref="IconRenderer"/>: GDI CreateDIBSection (32bpp) + OleCreatePictureIndirect.
+    /// On failure => returns null and the button is still displayed as text.
     /// </summary>
     internal static class IconFactory
     {
@@ -22,7 +22,7 @@ namespace Synode.Inventor.AddIn.Ui
                 {
                     biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
                     biWidth = size,
-                    biHeight = size, // dương = bottom-up (tương thích tốt nhất với OLE picture)
+                    biHeight = size, // positive = bottom-up (best compatibility with OLE pictures)
                     biPlanes = 1,
                     biBitCount = 32,
                     biCompression = 0 // BI_RGB
@@ -37,7 +37,7 @@ namespace Synode.Inventor.AddIn.Ui
                 var row = new int[size];
                 for (int y = 0; y < size; y++)
                 {
-                    int srcRow = size - 1 - y; // đảo hàng cho bottom-up
+                    int srcRow = size - 1 - y; // flip rows for bottom-up
                     for (int x = 0; x < size; x++) row[x] = unchecked((int)topDown[srcRow * size + x]);
                     Marshal.Copy(row, 0, bits + y * size * 4, size);
                 }
@@ -56,7 +56,7 @@ namespace Synode.Inventor.AddIn.Ui
                     log.Warn("Icon: OleCreatePictureIndirect failed (HRESULT 0x" + hr.ToString("X8") + ").");
                     return null;
                 }
-                hBitmap = IntPtr.Zero; // picture sở hữu HBITMAP (fOwn = true)
+                hBitmap = IntPtr.Zero; // the picture owns the HBITMAP (fOwn = true)
                 return (stdole.IPictureDisp)picture;
             }
             catch (Exception ex) when (ex is COMException || ex is InvalidCastException || ex is ExternalException || ex is DllNotFoundException || ex is EntryPointNotFoundException)
@@ -86,7 +86,7 @@ namespace Synode.Inventor.AddIn.Ui
             public uint biClrImportant;
         }
 
-        /// <summary>PICTDESC với nhánh union "bmp" (HBITMAP + HPALETTE).</summary>
+        /// <summary>PICTDESC with the "bmp" union branch (HBITMAP + HPALETTE).</summary>
         [StructLayout(LayoutKind.Sequential)]
         private struct PICTDESC
         {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SynodeExporter.Core
 {
-    /// <summary>Vector 3 thành phần single precision (giống System.Numerics.Vector3 của plugin SW).</summary>
+    /// <summary>Single-precision 3-component vector (like System.Numerics.Vector3 in the SW plugin).</summary>
     public struct Vec3
     {
         public float X;
@@ -41,8 +41,8 @@ namespace SynodeExporter.Core
         }
 
         /// <summary>
-        /// Giống Vector3.Normalize (v / |v|, mọi phép tính ở float32) để normals
-        /// trùng bit với pipeline SOLIDWORKS. Trả về false nếu vector bằng 0.
+        /// Like Vector3.Normalize (v / |v|, all arithmetic in float32) so that normals
+        /// are bit-identical to the SOLIDWORKS pipeline. Returns false if the vector is zero.
         /// </summary>
         public static bool TryNormalize(Vec3 v, out Vec3 result)
         {
@@ -65,7 +65,7 @@ namespace SynodeExporter.Core
         }
     }
 
-    /// <summary>Vector 4 (màu RGBA linear).</summary>
+    /// <summary>4-component vector (linear RGBA color).</summary>
     public struct Vec4
     {
         public float X;
@@ -81,7 +81,7 @@ namespace SynodeExporter.Core
             W = w;
         }
 
-        /// <summary>Giống Vector4.Distance (float32).</summary>
+        /// <summary>Like Vector4.Distance (float32).</summary>
         public static float Distance(Vec4 a, Vec4 b)
         {
             float dx = a.X - b.X;
@@ -99,7 +99,7 @@ namespace SynodeExporter.Core
         Opaque
     }
 
-    /// <summary>Tương đương PluginSynode.Export.ExtractedMaterial (plugin SW).</summary>
+    /// <summary>Equivalent to PluginSynode.Export.ExtractedMaterial (SW plugin).</summary>
     public sealed class ExtractedMaterial
     {
         public string Name { get; set; }
@@ -109,7 +109,7 @@ namespace SynodeExporter.Core
         public AlphaType Alpha { get; set; } = AlphaType.Opaque;
     }
 
-    /// <summary>Tương đương ExtractedMesh (plugin SW). Vị trí tính bằng mét.</summary>
+    /// <summary>Equivalent to ExtractedMesh (SW plugin). Positions are in meters.</summary>
     public sealed class ExtractedMesh
     {
         public string Name { get; set; }
@@ -123,9 +123,9 @@ namespace SynodeExporter.Core
     }
 
     /// <summary>
-    /// Tương đương ExtractedNode (plugin SW). LocalTransform gồm 16 float theo
-    /// thứ tự System.Numerics.Matrix4x4 (M11, M12, ..., M44; tịnh tiến ở
-    /// M41..M43), trùng với bố cục column-major của glTF "matrix".
+    /// Equivalent to ExtractedNode (SW plugin). LocalTransform holds 16 floats in
+    /// System.Numerics.Matrix4x4 order (M11, M12, ..., M44; translation in
+    /// M41..M43), identical to the column-major layout of the glTF "matrix".
     /// </summary>
     public sealed class ExtractedNode
     {
@@ -140,18 +140,18 @@ namespace SynodeExporter.Core
         public ExtractedNode Root;
     }
 
-    /// <summary>Tùy chọn export.</summary>
+    /// <summary>Export options.</summary>
     public sealed class ExportOptions
     {
         /// <summary>
-        /// Hệ số đổi đơn vị vị trí. API Solid Edge luôn trả về mét (giống API
-        /// SOLIDWORKS), glTF dùng mét, nên giá trị mặc định là 1 như plugin SW.
+        /// Position unit conversion factor. The Solid Edge API always returns meters (like the
+        /// SOLIDWORKS API) and glTF uses meters, so the default value is 1, as in the SW plugin.
         /// </summary>
         public float UnitScale { get; set; } = 1f;
 
         /// <summary>
-        /// Dung sai dây cung (chord height, mét) khi lấy facet. 0 = tự động theo
-        /// kích thước body: max(đường chéo * RelativeChordTolerance, MinChordTolerance).
+        /// Chord tolerance (chord height, meters) used for faceting. 0 = automatic, based on the
+        /// body size: max(diagonal * RelativeChordTolerance, MinChordTolerance).
         /// </summary>
         public double ChordTolerance { get; set; } = 0.0;
 
@@ -159,7 +159,7 @@ namespace SynodeExporter.Core
 
         public double MinChordTolerance { get; set; } = 1e-5;
 
-        /// <summary>FaceStyle của Solid Edge không có thông số PBR: dùng giá trị mặc định như ExtractedMaterial của SW.</summary>
+        /// <summary>Solid Edge FaceStyle has no PBR parameters: use the same defaults as ExtractedMaterial in SW.</summary>
         public float DefaultMetallic { get; set; } = 0f;
 
         public float DefaultRoughness { get; set; } = 0f;
@@ -179,7 +179,7 @@ namespace SynodeExporter.Core
         }
     }
 
-    /// <summary>Lỗi export có thông điệp hiển thị cho người dùng.</summary>
+    /// <summary>Export error whose message is shown to the user.</summary>
     public sealed class ExportException : Exception
     {
         public ExportException(string message) : base(message)

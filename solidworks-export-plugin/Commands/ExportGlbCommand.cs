@@ -82,9 +82,9 @@ namespace PluginSynode
             }
         }
 
-        private static string AskOutputPath(bool isSavedPhyscially)
+        private static string AskOutputPath(bool isSavedPhysically)
         {
-            if (isSavedPhyscially)
+            if (isSavedPhysically)
             {
                 using (var dialog = new SaveFileDialog())
                 {

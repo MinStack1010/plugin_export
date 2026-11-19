@@ -2,7 +2,7 @@
 
 Port of the SOLIDWORKS ``GltfSceneWriter`` (SharpGLTF 1.0.6 SceneBuilder).
 The produced document reproduces the structure SharpGLTF generates for the
-same scene (verified with tests/reference_sw):
+same scene (checked against the output of the original SOLIDWORKS writer):
 
 * one scene, root node = scene root; node names, identity matrices omitted,
   non-identity local transforms written as ``matrix``;
@@ -209,7 +209,7 @@ class _Builder:
     def pack_buffers(self):
         """Lay out the binary buffer exactly like SharpGLTF 1.0.6 does.
 
-        Verified with tests/reference_sw: one index component type for the
+        Matches the SOLIDWORKS writer output: one index component type for the
         whole document (uint32 as soon as any mesh needs it), and the per-mesh
         vertex / index blocks of each merged buffer view are placed in
         descending byte size (stable for equal sizes).  Accessor indices keep

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Synode.Inventor.AddIn.Ui
 {
-    /// <summary>Hộp thoại thông báo Win32 (MessageBoxW) gắn với cửa sổ chính Inventor; không cần WinForms.</summary>
+    /// <summary>Win32 message box (MessageBoxW) owned by the Inventor main window; no WinForms needed.</summary>
     internal interface IUserMessenger
     {
         void Info(string title, string message);

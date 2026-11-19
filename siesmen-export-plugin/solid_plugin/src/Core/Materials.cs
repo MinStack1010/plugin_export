@@ -2,10 +2,10 @@ using System;
 
 namespace SynodeExporter.Core
 {
-    /// <summary>Các hàm vật liệu, port từ SolidWorksGeometryExtractor (plugin SW).</summary>
+    /// <summary>Material helpers, ported from SolidWorksGeometryExtractor (SW plugin).</summary>
     public static class MaterialFactory
     {
-        /// <summary>Dung sai của AreMaterialsEquivalent (SW).</summary>
+        /// <summary>Tolerance of AreMaterialsEquivalent (SW).</summary>
         public const float EquivalenceTolerance = 0.0001f;
 
         public static float Clamp(float value)
@@ -21,7 +21,7 @@ namespace SynodeExporter.Core
             return value;
         }
 
-        /// <summary>Cùng công thức với SolidWorksGeometryExtractor.SrgbToLinear.</summary>
+        /// <summary>Same formula as SolidWorksGeometryExtractor.SrgbToLinear.</summary>
         public static float SrgbToLinear(float value)
         {
             value = Clamp(value);
@@ -32,7 +32,7 @@ namespace SynodeExporter.Core
             return (float)Math.Pow((value + 0.055f) / 1.055f, 2.4);
         }
 
-        /// <summary>Port của AreMaterialsEquivalent (bỏ qua tên, giống SW).</summary>
+        /// <summary>Port of AreMaterialsEquivalent (ignores the name, as in SW).</summary>
         public static bool AreEquivalent(ExtractedMaterial a, ExtractedMaterial b)
         {
             if (ReferenceEquals(a, b))
@@ -50,10 +50,10 @@ namespace SynodeExporter.Core
         }
 
         /// <summary>
-        /// Tạo vật liệu từ màu hiển thị của Solid Edge (FaceStyle diffuse, 0..1,
-        /// hệ sRGB như trên màn hình) và độ đục (Opacity, 1 = đục hoàn toàn).
-        /// Quy đổi giống ConvertDspbrMaterial của SW: màu sRGB -> linear,
-        /// transparency = 1 - opacity, alpha = 1 - transparency, BLEND khi có trong suốt.
+        /// Creates a material from a Solid Edge display color (FaceStyle diffuse, 0..1,
+        /// sRGB as shown on screen) and opacity (Opacity, 1 = fully opaque).
+        /// Same conversion as ConvertDspbrMaterial in SW: sRGB color -> linear,
+        /// transparency = 1 - opacity, alpha = 1 - transparency, BLEND when transparent.
         /// </summary>
         public static ExtractedMaterial FromDisplayColour(string name, float red, float green, float blue, float opacity,
             float metallic, float roughness)
@@ -78,8 +78,8 @@ namespace SynodeExporter.Core
     }
 
     /// <summary>
-    /// Port của CoordinateConverter.ConvertSolidWorksSceneToGltf: nhân vị trí với
-    /// UnitScale, chuẩn hóa lại normal, giữ nguyên transform (không đổi trục).
+    /// Port of CoordinateConverter.ConvertSolidWorksSceneToGltf: multiplies positions by
+    /// UnitScale, renormalizes normals, keeps transforms unchanged (no axis swap).
     /// </summary>
     public static class CoordinateConverter
     {
@@ -113,8 +113,8 @@ namespace SynodeExporter.Core
             };
             if (scale != 1f)
             {
-                // SW giữ nguyên tịnh tiến (chỉ đúng vì UnitScale luôn = 1); ở đây
-                // tịnh tiến cũng được đổi đơn vị để hình học và vị trí luôn nhất quán.
+                // SW keeps the translation unchanged (only correct because UnitScale is always 1); here
+                // the translation is scaled too so that geometry and positions always stay consistent.
                 node.LocalTransform[12] *= scale;
                 node.LocalTransform[13] *= scale;
                 node.LocalTransform[14] *= scale;

@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace Synode.Inventor.Core
 {
-    /// <summary>Kết quả kiểm tra một file GLB.</summary>
+    /// <summary>Result of validating a GLB file.</summary>
     public sealed class GlbValidationResult
     {
         public bool IsValid => Errors.Count == 0;
@@ -25,12 +25,12 @@ namespace Synode.Inventor.Core
         public int MaterialCount { get; internal set; }
         public int TextureCount { get; internal set; }
         public int AccessorCount { get; internal set; }
-        /// <summary>Tổng số tam giác (ước tính từ indices hoặc POSITION với mode TRIANGLES).</summary>
+        /// <summary>Total number of triangles (estimated from indices, or from POSITION with mode TRIANGLES).</summary>
         public long TriangleCount { get; internal set; }
         public long VertexCount { get; internal set; }
         public List<string> ExtensionsUsed { get; } = new List<string>();
         public List<string> ExtensionsRequired { get; } = new List<string>();
-        /// <summary>Bao (min/max) của POSITION theo hệ tọa độ local của từng mesh (chỉ để tham khảo).</summary>
+        /// <summary>Bounds (min/max) of POSITION in the local coordinate system of each mesh (for reference only).</summary>
         public double[]? PositionMin { get; internal set; }
         public double[]? PositionMax { get; internal set; }
 
@@ -51,11 +51,11 @@ namespace Synode.Inventor.Core
     }
 
     /// <summary>
-    /// Kiểm tra cấu trúc GLB (glTF 2.0 binary) theo đặc tả Khronos:
-    /// header 12 byte (magic "glTF", version 2, length), chunk JSON đầu tiên, chunk BIN tùy chọn,
-    /// căn lề 4 byte, JSON hợp lệ với asset.version = "2.0", và các tham chiếu
-    /// buffer/bufferView/accessor/mesh/node/material nằm trong phạm vi.
-    /// Đây KHÔNG phải bản thay thế đầy đủ cho Khronos glTF-Validator.
+    /// Validates the GLB (glTF 2.0 binary) structure according to the Khronos specification:
+    /// 12-byte header (magic "glTF", version 2, length), first chunk is JSON, optional BIN chunk,
+    /// 4-byte alignment, valid JSON with asset.version = "2.0", and
+    /// buffer/bufferView/accessor/mesh/node/material references within range.
+    /// This is NOT a full replacement for the Khronos glTF-Validator.
     /// </summary>
     public static class GlbValidator
     {
@@ -174,7 +174,7 @@ namespace Synode.Inventor.Core
                 {
                     r.Errors.Add("Unexpected " + (chunkType == ChunkJson ? "JSON" : "BIN") + " chunk at index " + chunkIndex + ".");
                 }
-                // Các chunk khác: bỏ qua theo đặc tả.
+                // Other chunks: ignored, as required by the specification.
                 offset = (int)end;
                 chunkIndex++;
             }
@@ -188,7 +188,7 @@ namespace Synode.Inventor.Core
             JsonDocument doc;
             try
             {
-                // JSON chunk được đệm bằng khoảng trắng (0x20) - hợp lệ với parser.
+                // The JSON chunk is padded with spaces (0x20) - accepted by the parser.
                 doc = JsonDocument.Parse(json, new JsonDocumentOptions { AllowTrailingCommas = false });
             }
             catch (JsonException ex)

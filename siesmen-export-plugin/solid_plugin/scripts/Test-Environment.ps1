@@ -1,8 +1,8 @@
 ﻿<#
 .SYNOPSIS
-    Kiểm tra môi trường build/cài đặt Synode Exporter cho Solid Edge 2026 (chỉ đọc, không thay đổi hệ thống).
+    Checks the build/installation environment of Synode Exporter for Solid Edge 2026 (read-only, makes no system changes).
 .OUTPUTS
-    PSCustomObject với các thông tin môi trường; ném lỗi khi -Strict và thiếu điều kiện bắt buộc.
+    PSCustomObject with the environment information; throws when -Strict is used and a required condition is missing.
 #>
 [CmdletBinding()]
 param(
@@ -15,15 +15,15 @@ $ErrorActionPreference = 'Stop'
 $problems = New-Object System.Collections.Generic.List[string]
 
 function Write-Check([string]$Name, [bool]$Ok, [string]$Detail) {
-    $mark = if ($Ok) { '[OK]  ' } else { '[LOI] ' }
+    $mark = if ($Ok) { '[OK]   ' } else { '[FAIL] ' }
     $color = if ($Ok) { 'Green' } else { 'Red' }
     Write-Host ($mark + $Name + ': ' + $Detail) -ForegroundColor $color
     if (-not $Ok) { $problems.Add($Name + ': ' + $Detail) }
 }
 
-# 1. Kiến trúc tiến trình
+# 1. Process architecture
 Write-Check 'Windows 64-bit' ([Environment]::Is64BitOperatingSystem) ([Environment]::OSVersion.VersionString)
-Write-Check 'PowerShell 64-bit' ([Environment]::Is64BitProcess) 'Cần PowerShell x64 để ghi đúng registry view 64-bit'
+Write-Check 'PowerShell 64-bit' ([Environment]::Is64BitProcess) 'x64 PowerShell is required to write to the 64-bit registry view'
 
 # 2. Solid Edge 2026
 $programDir = Join-Path $SolidEdgeDir 'Program'
@@ -32,9 +32,9 @@ $edgeVersion = $null
 if (Test-Path $edge) {
     $edgeVersion = (Get-Item $edge).VersionInfo.FileVersion
     $major = [int]((Get-Item $edge).VersionInfo.FileMajorPart)
-    Write-Check 'Solid Edge (Edge.exe)' ($major -eq 226) ("$edge, phiên bản $edgeVersion (Solid Edge 2026 = 226.x)")
+    Write-Check 'Solid Edge (Edge.exe)' ($major -eq 226) ("$edge, version $edgeVersion (Solid Edge 2026 = 226.x)")
 } else {
-    Write-Check 'Solid Edge (Edge.exe)' $false "Không tìm thấy $edge"
+    Write-Check 'Solid Edge (Edge.exe)' $false "$edge not found"
 }
 
 $interops = 'interop.SolidEdgeFrameworkLib.dll', 'interop.SolidEdgePartLib.dll', 'interop.SolidEdgeAssemblyLib.dll',
@@ -55,7 +55,7 @@ $regasm = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\RegAsm.exe
 $mscoree = Join-Path $env:WINDIR 'System32\mscoree.dll'
 Write-Check 'mscoree.dll (CLR shim x64)' (Test-Path $mscoree) $mscoree
 
-# 4. SDK build (chỉ cần khi build)
+# 4. Build SDK (only required for building)
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
 $sdkVersion = $null
 if ($dotnet) {
@@ -79,6 +79,6 @@ $result = [pscustomobject]@{
 }
 
 if ($Strict -and $problems.Count -gt 0) {
-    throw ("Môi trường chưa đáp ứng yêu cầu:`n - " + ($problems -join "`n - "))
+    throw ("The environment does not meet the requirements:`n - " + ($problems -join "`n - "))
 }
 $result

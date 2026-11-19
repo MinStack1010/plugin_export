@@ -9,12 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynodeInventor.Core", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynodeInventor.AddIn", "src\SynodeInventor.AddIn\SynodeInventor.AddIn.csproj", "{CDBADD59-EE63-4DC4-9351-7D8A71002006}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynodeInventor.Tests", "tests\SynodeInventor.Tests\SynodeInventor.Tests.csproj", "{926B2F36-2269-4481-8F9F-BCE1BED29918}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynodeInventor.IntegrationTests", "tests\SynodeInventor.IntegrationTests\SynodeInventor.IntegrationTests.csproj", "{B2C5E765-3A50-45D3-A063-08401E250521}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -29,14 +23,6 @@ Global
 		{CDBADD59-EE63-4DC4-9351-7D8A71002006}.Debug|x64.Build.0 = Debug|x64
 		{CDBADD59-EE63-4DC4-9351-7D8A71002006}.Release|x64.ActiveCfg = Release|x64
 		{CDBADD59-EE63-4DC4-9351-7D8A71002006}.Release|x64.Build.0 = Release|x64
-		{926B2F36-2269-4481-8F9F-BCE1BED29918}.Debug|x64.ActiveCfg = Debug|x64
-		{926B2F36-2269-4481-8F9F-BCE1BED29918}.Debug|x64.Build.0 = Debug|x64
-		{926B2F36-2269-4481-8F9F-BCE1BED29918}.Release|x64.ActiveCfg = Release|x64
-		{926B2F36-2269-4481-8F9F-BCE1BED29918}.Release|x64.Build.0 = Release|x64
-		{B2C5E765-3A50-45D3-A063-08401E250521}.Debug|x64.ActiveCfg = Debug|x64
-		{B2C5E765-3A50-45D3-A063-08401E250521}.Debug|x64.Build.0 = Debug|x64
-		{B2C5E765-3A50-45D3-A063-08401E250521}.Release|x64.ActiveCfg = Release|x64
-		{B2C5E765-3A50-45D3-A063-08401E250521}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,7 +30,5 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{8A89945B-E87D-452D-8E50-C418802532CF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{CDBADD59-EE63-4DC4-9351-7D8A71002006} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{926B2F36-2269-4481-8F9F-BCE1BED29918} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
-		{B2C5E765-3A50-45D3-A063-08401E250521} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

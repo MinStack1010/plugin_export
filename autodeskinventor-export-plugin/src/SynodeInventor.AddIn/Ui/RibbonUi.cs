@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Inventor;
 using Synode.Inventor.Core;
@@ -7,8 +6,8 @@ using Synode.Inventor.Core;
 namespace Synode.Inventor.AddIn.Ui
 {
     /// <summary>
-    /// Tạo (idempotent) tab "Synode" > panel "Synode" > nút "Export to GLB" trong ribbon Part và Assembly,
-    /// và gỡ bỏ sạch khi add-in bị unload.
+    /// Creates (idempotently) the "Synode" tab > "Synode" panel > "Export to GLB" button in the Part and Assembly ribbons,
+    /// and removes them cleanly when the add-in is unloaded.
     /// </summary>
     internal sealed class RibbonUi : IDisposable
     {
@@ -83,7 +82,7 @@ namespace Synode.Inventor.AddIn.Ui
                 }
                 catch (COMException ex)
                 {
-                    // Một ribbon lỗi không được làm hỏng các ribbon khác; ghi log đầy đủ.
+                    // A failure in one ribbon must not break the other ribbons; log full details.
                     _log.Error("Failed to create UI in ribbon '" + ribbonName + "'.", ex);
                 }
             }
@@ -104,12 +103,12 @@ namespace Synode.Inventor.AddIn.Ui
         {
             try
             {
-                // ControlDefinitions.Item(InternalName) ném COMException nếu chưa tồn tại.
+                // ControlDefinitions.Item(InternalName) throws a COMException if it does not exist yet.
                 return defs[AddInIds.ExportButtonInternalName] as ButtonDefinition;
             }
             catch (COMException)
             {
-                return null; // chưa có => tạo mới (không phải lỗi)
+                return null; // not created yet => create a new one (not an error)
             }
             catch (ArgumentException)
             {
@@ -190,7 +189,7 @@ namespace Synode.Inventor.AddIn.Ui
                     if (tab == null) continue;
                     RibbonPanel? panel = FindPanel(tab);
                     panel?.Delete();
-                    // Chỉ xoá tab nếu tab là của Synode và không còn panel nào khác.
+                    // Only delete the tab if it belongs to Synode and has no other panels left.
                     if (tab.RibbonPanels.Count == 0) tab.Delete();
                 }
                 catch (COMException ex)

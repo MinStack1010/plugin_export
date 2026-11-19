@@ -1,45 +1,43 @@
 # Synode Inventor Exporter — Autodesk Inventor Professional 2027
 
-Add-in **Synode** cho Autodesk Inventor 2027: xuất Part (`.ipt`) hoặc Assembly (`.iam`) đang mở thành file **GLB (glTF 2.0 binary)** bằng một nút bấm.
+**Synode** add-in for Autodesk Inventor 2027: exports the open Part (`.ipt`) or Assembly (`.iam`) to a **GLB (glTF 2.0 binary)** file with a single button click.
 
-> Dự án phát triển/kiểm thử nội bộ, chạy trên bản Inventor Professional 2027 Trial (non-commercial). Add-in không can thiệp license.
+> Internal development/testing project, running on Inventor Professional 2027 Trial (non-commercial). The add-in does not interfere with licensing.
 
 ---
 
-## A. Tổng quan
+## A. Overview
 
-| Thành phần | Mô tả |
+| Component | Description |
 |---|---|
-| Tên add-in | `Synode Inventor Exporter` (Tools › Add-Ins) |
-| Giao diện | Ribbon tab **Synode** › panel **Synode** › nút **Export to GLB** (môi trường Part và Assembly) |
-| Export | Dùng **translator glTF gốc của Inventor 2027** (`{856E3C5D-A1F4-4B86-A6C0-8B849C0C8BE0}`, `TranslatorAddIn.SaveCopyAs`) — hình học, transform của component, vật liệu/màu và đơn vị do chính Inventor chuyển đổi |
-| Kiểm tra đầu ra | Mỗi file được kiểm tra bằng `GlbValidator`: magic `glTF`, version 2, độ dài khai báo, chunk JSON/BIN, alignment 4 byte, buffer/bufferView/accessor, mesh, node, scene. File không hợp lệ thì không được ghi vào đích |
-| Cơ chế nạp | File manifest `.addin` (Inventor tự quét thư mục Addins). **Không dùng RegAsm, không ghi registry** |
-| Công nghệ | C# / .NET (net10.0-windows nếu có .NET 10 SDK, nếu không thì net8.0-windows), x64, Inventor Interop 31.x, không dùng NuGet trong add-in |
-| GUID add-in | `{7001FEF0-B792-4C1D-9FB4-0515C8F2F90B}` |
+| Add-in name | `Synode Inventor Exporter` (Tools › Add-Ins) |
+| User interface | Ribbon tab **Synode** › panel **Synode** › button **Export to GLB** (Part and Assembly environments) |
+| Export | Uses **Inventor 2027's native glTF translator** (`{856E3C5D-A1F4-4B86-A6C0-8B849C0C8BE0}`, `TranslatorAddIn.SaveCopyAs`) — geometry, component transforms, materials/colors and units are converted by Inventor itself |
+| Output validation | Every file is checked by `GlbValidator`: `glTF` magic, version 2, declared length, JSON/BIN chunks, 4-byte alignment, buffer/bufferView/accessor, mesh, node, scene. Invalid files are never written to the destination |
+| Loading mechanism | `.addin` manifest file (Inventor scans the Addins folders automatically). **No RegAsm, no registry writes** |
+| Technology | C# / .NET (net10.0-windows if the .NET 10 SDK is available, otherwise net8.0-windows), x64, Inventor Interop 31.x, no NuGet packages in the add-in |
+| Add-in GUID | `{7001FEF0-B792-4C1D-9FB4-0515C8F2F90B}` |
 | Log | `%LOCALAPPDATA%\Synode\InventorExporter\logs\SynodeInventor.log` |
 
-Cấu trúc thư mục:
+Folder structure:
 
 ```text
 autodeskinventor-export-plugin\
-├── src\SynodeInventor.Core\      # Không phụ thuộc Inventor: GlbValidator, ExportPathHelper, logger, mã lỗi, icon
-├── src\SynodeInventor.AddIn\     # Add-in: StandardAddInServer, RibbonUi, ExportGlbCommand, các service
-├── tests\SynodeInventor.Tests\   # Unit test (không cần Inventor)
-├── tests\SynodeInventor.IntegrationTests\  # Test thật trên Inventor qua COM
+├── src\SynodeInventor.Core\      # No Inventor dependency: GlbValidator, ExportPathHelper, logger, error codes, icon
+├── src\SynodeInventor.AddIn\     # Add-in: StandardAddInServer, RibbonUi, ExportGlbCommand, services
 ├── scripts\                      # Find-Inventor.ps1, Test-ScriptSyntax.ps1
 ├── docs\                         # ANALYSIS.md, MANUAL_TEST.md
 ├── build.ps1 / install.ps1 / uninstall.ps1
 └── SynodeInventor.sln
 ```
 
-## B. Yêu cầu hệ thống
+## B. System requirements
 
 - Windows 10/11 x64.
-- Autodesk Inventor Professional 2027 (bản 31.x) đã cài và kích hoạt (trial cũng được).
-- .NET SDK: **khuyến nghị .NET 10 SDK x64** (khớp runtime .NET 10 mà Inventor 2027 dùng cho add-in). Nếu chỉ có SDK 8/9, `build.ps1` sẽ build `net8.0-windows` và in cảnh báo.
-- Không cần Inventor SDK riêng: dùng `Autodesk.Inventor.Interop.dll` có sẵn trong `Inventor 2027\Bin\Public Assemblies`.
-- Script tương thích Windows PowerShell 5.1 và PowerShell 7 (toàn bộ `.ps1` chỉ chứa ký tự ASCII).
+- Autodesk Inventor Professional 2027 (version 31.x) installed and activated (trial is fine).
+- .NET SDK: **.NET 10 SDK x64 recommended** (matches the .NET 10 runtime that Inventor 2027 uses for add-ins). If only SDK 8/9 is installed, `build.ps1` builds `net8.0-windows` and prints a warning.
+- No separate Inventor SDK required: uses the `Autodesk.Inventor.Interop.dll` shipped in `Inventor 2027\Bin\Public Assemblies`.
+- Scripts are compatible with Windows PowerShell 5.1 and PowerShell 7 (all `.ps1` files contain ASCII characters only).
 
 ## C. Build
 
@@ -48,68 +46,62 @@ cd C:\plugin_export_3d\autodeskinventor-export-plugin
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-Script sẽ: kiểm tra SDK → tìm Inventor 2027 qua registry (`RegistryVersion31.0\InventorLocation`) → build Release x64 → kiểm tra DLL (PE32+/AMD64, tên assembly) → chép ra `dist\` → chạy unit test.
+The script: checks the SDK → finds Inventor 2027 through the registry (`RegistryVersion31.0\InventorLocation`) → builds Release x64 → verifies the DLL (PE32+/AMD64, assembly name) → copies the output to `dist\`.
 
-Kết quả trong `dist\`: `SynodeInventor.AddIn.dll`, `SynodeInventor.AddIn.pdb`, `Synode.InventorExporter.addin`, `build-info.txt`.
+Output in `dist\`: `SynodeInventor.AddIn.dll`, `SynodeInventor.AddIn.pdb`, `Synode.InventorExporter.addin`, `build-info.txt`.
 
-Tuỳ chọn: `-SkipTests`, `-TargetFramework net10.0-windows`, `-InventorBinDir "<...>\Inventor 2027\Bin"`, `-OutputDir`, `-WorkDir`.
+Options: `-Configuration Release|Debug`, `-TargetFramework net10.0-windows`, `-InventorBinDir "<...>\Inventor 2027\Bin"`, `-OutputDir`, `-WorkDir`.
 
-## D. Cài đặt và sử dụng
+## D. Installation and usage
 
-**Cài đặt (theo người dùng, không cần quyền admin):**
+**Install (per user, no administrator rights required):**
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 -DryRun   # xem trước, không thay đổi gì
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -DryRun   # preview only, changes nothing
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-File được chép vào `%APPDATA%\Autodesk\Inventor 2027\Addins\SynodeInventorExporter\`. Có thể chạy lại nhiều lần (ghi đè bản cũ). Nếu Inventor đang mở, script chỉ cảnh báo, **không tự đóng Inventor**. Cài cho mọi người dùng: `-AllUsers` (cần PowerShell Administrator, chép vào `%ProgramData%`).
+Files are copied to `%APPDATA%\Autodesk\Inventor 2027\Addins\SynodeInventorExporter\`. The script can be run repeatedly (it overwrites the previous version). If Inventor is running, the script only warns and **does not close Inventor**. To install for all users: `-AllUsers` (requires an Administrator PowerShell; copies to `%ProgramData%`).
 
-**Sử dụng:**
+**Usage:**
 
-1. Khởi động lại Inventor 2027.
-2. Mở một file `.ipt` hoặc `.iam`.
-3. Chọn tab **Synode** › **Export to GLB**.
-4. Chọn nơi lưu (mặc định: cùng thư mục và cùng tên với tài liệu, đuôi `.glb`).
-5. Khi xong sẽ hiện thông báo gồm đường dẫn, dung lượng, số mesh/node/vật liệu/tam giác. Nếu lỗi sẽ hiện thông báo lỗi rõ ràng kèm đường dẫn log.
+1. Restart Inventor 2027.
+2. Open a `.ipt` or `.iam` file.
+3. Select the **Synode** tab › **Export to GLB**.
+4. Choose where to save (default: same folder and same name as the document, with the `.glb` extension).
+5. When finished, a message shows the path, file size and mesh/node/material/triangle counts. On failure, a clear error message is shown together with the log path.
 
-Kiểm tra add-in đã nạp: **Tools › Add-Ins** › `Synode Inventor Exporter` › trạng thái *Loaded*, có thể tick *Load Automatically*.
+To check that the add-in is loaded: **Tools › Add-Ins** › `Synode Inventor Exporter` › status *Loaded*; you can tick *Load Automatically*.
 
-## E. Kiểm thử
+## E. Verification
 
 ```powershell
-# Unit test (không cần Inventor) - 39 test
-powershell -ExecutionPolicy Bypass -File .\tests\run_tests.ps1
-
-# Kiểm tra cú pháp + encoding mọi script PowerShell
+# Check syntax + encoding of every PowerShell script
 powershell -ExecutionPolicy Bypass -File .\scripts\Test-ScriptSyntax.ps1
-
-# Integration test trên Inventor thật (mở một Inventor mới qua COM, tự đóng khi xong)
-powershell -ExecutionPolicy Bypass -File .\tests\run_integration.ps1 [-Model C:\path\part.ipt] [-Visible]
 ```
 
-Integration test sao chép file mẫu vào `test-output\integration\input` (không sửa file gốc), export Part, tạo Assembly gồm 3 occurrence (1 cái xoay 90°) rồi export, kiểm tra GLB bằng `GlbValidator` và bằng **SharpGLTF** (validator độc lập), kiểm tra tỉ lệ đơn vị (cm → m), và các trường hợp lỗi (file đích bị khoá, thư mục không tồn tại, tài liệu Drawing). Báo cáo nằm ở `test-output\integration\integration-report.txt`.
+Every export is validated automatically by the built-in `GlbValidator` before the file is moved to its destination; the result is written to the log (`Validation: ...`). For an independent check, open the `.glb` in the [Khronos glTF Validator](https://github.khronos.org/glTF-Validator/).
 
-Kiểm thử thủ công trong giao diện: xem [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md).
+Manual testing in the user interface: see [docs/MANUAL_TEST.md](docs/MANUAL_TEST.md).
 
-## F. Gỡ cài đặt và xử lý sự cố
+## F. Uninstall and troubleshooting
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\uninstall.ps1 -DryRun
-powershell -ExecutionPolicy Bypass -File .\uninstall.ps1            # thêm -AllUsers nếu đã cài cho mọi người, -RemoveLogs để xoá log
+powershell -ExecutionPolicy Bypass -File .\uninstall.ps1            # add -AllUsers if installed for all users, -RemoveLogs to delete logs
 ```
 
-Chỉ xoá các file của Synode (DLL, PDB, manifest có đúng ClassId). Không đụng registry hay add-in khác.
+Only Synode files are removed (DLL, PDB, manifest with the matching ClassId). The registry and other add-ins are not touched.
 
-| Hiện tượng | Nguyên nhân / Cách xử lý |
+| Symptom | Cause / Solution |
 |---|---|
-| `ParserError`, ký tự lạ khi chạy script | Script chỉ chứa ASCII; nếu bạn sửa và thêm tiếng Việt, hãy lưu **UTF-8 with BOM**. Kiểm tra bằng `scripts\Test-ScriptSyntax.ps1` |
-| Không thấy tab **Synode** | Kiểm tra Tools › Add-Ins; xem log; chắc chắn đã khởi động lại Inventor sau khi cài. Tab chỉ có ở môi trường Part/Assembly (không có ở màn hình Home) |
-| Add-in báo lỗi khi nạp | Mở log `%LOCALAPPDATA%\Synode\InventorExporter\logs\SynodeInventor.log`. Nếu build `net8.0-windows` mà Inventor từ chối nạp, cài .NET 10 SDK và build lại (`build.ps1` tự chọn net10.0) |
-| `install.ps1` báo file đang bị dùng | Inventor đang nạp add-in → đóng Inventor rồi chạy lại |
-| "No document is open" / "not supported" | Phải mở Part hoặc Assembly (không hỗ trợ Drawing `.idw/.dwg`, Presentation `.ipn`) |
-| "has no solid, surface or mesh bodies" | Part rỗng hoặc assembly không có component |
-| "glTF translator ... not available" | Bật **Translator: glTF** trong Tools › Add-Ins (translator gốc của Inventor) |
-| "output file is in use" | Đóng chương trình đang mở file `.glb` (viewer, trình duyệt) hoặc chọn tên khác |
-| Hộp thoại license / trial hết hạn | Vấn đề môi trường của Inventor, không phải lỗi plugin; add-in không can thiệp license |
-| `build.ps1` cảnh báo thiếu .NET 10 SDK | Vẫn build được net8.0; khuyến nghị cài .NET 10 SDK x64 |
+| `ParserError` or garbled characters when running a script | Scripts contain ASCII only; if you edit a script and add non-ASCII characters, save it as **UTF-8 with BOM**. Check with `scripts\Test-ScriptSyntax.ps1` |
+| **Synode** tab not visible | Check Tools › Add-Ins; check the log; make sure Inventor was restarted after installation. The tab only exists in the Part/Assembly environments (not on the Home screen) |
+| Add-in reports an error while loading | Open the log `%LOCALAPPDATA%\Synode\InventorExporter\logs\SynodeInventor.log`. If a `net8.0-windows` build is rejected by Inventor, install the .NET 10 SDK and rebuild (`build.ps1` picks net10.0 automatically) |
+| `install.ps1` reports a file in use | Inventor has the add-in loaded → close Inventor and run again |
+| "No document is open" / "not supported" | A Part or Assembly must be open (Drawing `.idw/.dwg` and Presentation `.ipn` are not supported) |
+| "has no solid, surface or mesh bodies" | Empty part, or assembly without components |
+| "glTF translator ... not available" | Enable **Translator: glTF** in Tools › Add-Ins (Inventor's native translator) |
+| "output file is in use" | Close the program that has the `.glb` file open (viewer, browser) or choose another name |
+| License / trial expired dialog | Inventor environment issue, not a plugin bug; the add-in does not interfere with licensing |
+| `build.ps1` warns that the .NET 10 SDK is missing | net8.0 still builds; installing the .NET 10 SDK x64 is recommended |

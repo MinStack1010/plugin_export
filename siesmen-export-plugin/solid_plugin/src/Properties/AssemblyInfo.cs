@@ -10,5 +10,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: AssemblyInformationalVersion("1.0.0")]
 
-// Chỉ class add-in (SynodeAddIn) được đánh dấu ComVisible(true).
+// Only the add-in class (SynodeAddIn) is marked ComVisible(true).
 [assembly: ComVisible(false)]

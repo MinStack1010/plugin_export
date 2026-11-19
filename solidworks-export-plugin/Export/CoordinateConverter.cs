@@ -19,7 +19,7 @@ namespace PluginSynode.Export
 
             if (source.Root == null)
             {
-                throw new InvalidOperationException("The extracted scene has not root node.");
+                throw new InvalidOperationException("The extracted scene has no root node.");
             }
 
             if (options.UnitScale <= 0)

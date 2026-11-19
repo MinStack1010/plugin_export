@@ -10,14 +10,14 @@ using SEP = global::SolidEdge.Part.Interop;
 namespace SynodeExporter.AddIn
 {
     /// <summary>
-    /// Đọc mô hình đang mở trong Solid Edge thành ExtractedScene, tương đương
-    /// SolidWorksGeometryExtractor của plugin SW:
-    /// * Part / Sheet Metal: node gốc (tên tài liệu) chứa mesh của các body hiển thị;
-    /// * Assembly: node gốc (tên tài liệu) + cây Occurrence, transform cục bộ = ma trận
-    ///   của Occurrence trong tài liệu cha; sub-assembly được duyệt đệ quy;
-    /// * mỗi body chia thành các nhóm vật liệu (face -> body -> part), mesh đặt tên
-    ///   "&lt;node&gt;_Material_&lt;i&gt;" như SW.
-    /// Mọi tọa độ API Solid Edge tính bằng mét.
+    /// Reads the model open in Solid Edge into an ExtractedScene, equivalent to
+    /// SolidWorksGeometryExtractor of the SW plugin:
+    /// * Part / Sheet Metal: root node (document name) holding the meshes of the visible bodies;
+    /// * Assembly: root node (document name) + Occurrence tree, local transform = matrix
+    ///   of the Occurrence in its parent document; sub-assemblies are traversed recursively;
+    /// * each body is split into material groups (face -> body -> part), meshes are named
+    ///   "&lt;node&gt;_Material_&lt;i&gt;" as in SW.
+    /// All Solid Edge API coordinates are in meters.
     /// </summary>
     public sealed class SolidEdgeGeometryExtractor
     {
@@ -81,7 +81,7 @@ namespace SynodeExporter.AddIn
             }
             catch (COMException ex)
             {
-                // Solid Edge báo lỗi khi không có tài liệu nào đang mở.
+                // Solid Edge raises an error when no document is open.
                 Logger.Warn("Application.ActiveDocument failed: " + ex.Message);
                 return null;
             }
@@ -110,7 +110,7 @@ namespace SynodeExporter.AddIn
             return scene;
         }
 
-        /// <summary>Tìm một Occurrence có tịnh tiến khác 0 để xác định bố cục ma trận của GetMatrix.</summary>
+        /// <summary>Finds an Occurrence with a non-zero translation to determine the matrix layout of GetMatrix.</summary>
         private void DetectLayoutHint(SEA.Occurrences occurrences, int depth, ref int budget)
         {
             if (occurrences == null || _layoutKnown || depth > MaxDepth)
@@ -206,7 +206,7 @@ namespace SynodeExporter.AddIn
             }
             if (document == null)
             {
-                // Linh kiện bị suppress, chưa được nạp hoặc mất file: không có hình học.
+                // Component is suppressed, not loaded or its file is missing: no geometry.
                 Logger.Warn("Skipping occurrence without document (suppressed, unloaded or missing): " + name);
                 SkippedOccurrences++;
                 return null;
@@ -430,14 +430,14 @@ namespace SynodeExporter.AddIn
             ExtractedMaterial faceMaterial = MaterialFromStyle(faceStyle, bodyName + "_Face");
             if (faceMaterial != null)
             {
-                // Face.Style trả về style hiệu lực; chỉ coi là "override" khi khác vật liệu body.
+                // Face.Style returns the effective style; treat it as an "override" only when it differs from the body material.
                 return MaterialFactory.AreEquivalent(faceMaterial, bodyMaterial) ? bodyMaterial : faceMaterial;
             }
             if (bodyMaterial != null)
             {
                 return bodyMaterial;
             }
-            // Không có FaceStyle: dùng màu hiển thị của face.
+            // No FaceStyle: use the display color of the face.
             try
             {
                 double r, g, b, a;
@@ -447,7 +447,7 @@ namespace SynodeExporter.AddIn
             }
             catch (COMException)
             {
-                return null; // GlbWriter dùng vật liệu mặc định (xám 0.8) như SW
+                return null; // GlbWriter uses the default material (gray 0.8) as in SW
             }
         }
 

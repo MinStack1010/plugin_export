@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SynodeExporter.Core
 {
-    /// <summary>Số JSON với chuỗi biểu diễn cố định.</summary>
+    /// <summary>JSON number with a fixed text representation.</summary>
     public sealed class JsonNumber
     {
         public JsonNumber(string text)
@@ -22,14 +22,14 @@ namespace SynodeExporter.Core
         }
     }
 
-    /// <summary>Đối tượng JSON giữ nguyên thứ tự khóa.</summary>
+    /// <summary>JSON object that preserves key order.</summary>
     public sealed class JsonObject
     {
         private readonly List<KeyValuePair<string, object>> _items = new List<KeyValuePair<string, object>>();
 
         public IList<KeyValuePair<string, object>> Items { get { return _items; } }
 
-        /// <summary>Gán giá trị; khóa đã có thì giữ nguyên vị trí.</summary>
+        /// <summary>Sets a value; an existing key keeps its position.</summary>
         public JsonObject Set(string key, object value)
         {
             for (int i = 0; i < _items.Count; i++)
@@ -74,13 +74,13 @@ namespace SynodeExporter.Core
 
     public enum JsonEscaping
     {
-        /// <summary>Như JavaScriptEncoder.Default của System.Text.Json: thoát ký tự ngoài ASCII và ký tự HTML.</summary>
+        /// <summary>Like JavaScriptEncoder.Default of System.Text.Json: escapes non-ASCII and HTML-sensitive characters.</summary>
         Default,
-        /// <summary>Chỉ thoát ký tự điều khiển, dấu nháy kép và gạch chéo ngược; UTF-8 giữ nguyên.</summary>
+        /// <summary>Escapes only control characters, double quotes and backslashes; UTF-8 is kept as-is.</summary>
         Relaxed
     }
 
-    /// <summary>Bộ ghi JSON gọn (không khoảng trắng) và định dạng số kiểu .NET (System.Text.Json).</summary>
+    /// <summary>Compact JSON writer (no whitespace) with .NET-style number formatting (System.Text.Json).</summary>
     public static class JsonText
     {
         public static string Serialize(object value, JsonEscaping escaping)
@@ -199,7 +199,7 @@ namespace SynodeExporter.Core
                     sb.Append(escaping == JsonEscaping.Relaxed ? "\\\"" : "\\u0022");
                     continue;
                 }
-                bool escape = c < 0x20 || char.IsSurrogate(c); // ký tự ngoài BMP luôn được thoát (giống System.Text.Json)
+                bool escape = c < 0x20 || char.IsSurrogate(c); // characters outside the BMP are always escaped (as in System.Text.Json)
                 if (!escape && escaping == JsonEscaping.Default)
                 {
                     escape = c > 0x7E || c == '&' || c == '\'' || c == '+' || c == '<' || c == '>' || c == '`';
@@ -216,7 +216,7 @@ namespace SynodeExporter.Core
             sb.Append('"');
         }
 
-        /// <summary>Chuỗi ngắn nhất khôi phục đúng giá trị float32 (giống float.ToString() của .NET Core).</summary>
+        /// <summary>Shortest string that round-trips the float32 value exactly (like float.ToString() in .NET Core).</summary>
         public static string FormatFloat(float v)
         {
             if (float.IsNaN(v) || float.IsInfinity(v))
@@ -234,7 +234,7 @@ namespace SynodeExporter.Core
             return ShortestRoundTrip(v, 24, -149, 9);
         }
 
-        /// <summary>Chuỗi ngắn nhất khôi phục đúng giá trị double (giống double.ToString() của .NET Core).</summary>
+        /// <summary>Shortest string that round-trips the double value exactly (like double.ToString() in .NET Core).</summary>
         public static string FormatDouble(double v)
         {
             if (double.IsNaN(v) || double.IsInfinity(v))
@@ -253,10 +253,10 @@ namespace SynodeExporter.Core
         }
 
         /// <summary>
-        /// Chuỗi thập phân ngắn nhất (gần giá trị nhất) khôi phục đúng số float/double,
-        /// định dạng như "G{số chữ số}" của .NET. Tính chính xác bằng BigInteger vì
-        /// float/double.ToString("G n") của .NET Framework 4.8 (runtime của Edge.exe) làm
-        /// tròn hai lần (qua 15 chữ số) nên có thể khác kết quả của .NET Core/SharpGLTF.
+        /// Shortest (closest) decimal string that round-trips the float/double value exactly,
+        /// formatted like .NET "G{digit count}". Computed exactly with BigInteger because
+        /// float/double.ToString("G n") in .NET Framework 4.8 (the Edge.exe runtime) rounds
+        /// twice (via 15 digits) and may therefore differ from .NET Core/SharpGLTF.
         /// </summary>
         internal static string ShortestRoundTrip(double v, int mantissaBits, int minExponent, int maxDigits)
         {
@@ -267,21 +267,21 @@ namespace SynodeExporter.Core
             long frac = bits & 0xFFFFFFFFFFFFFL;
             BigInteger mant = rawExp == 0 ? frac : (frac | (1L << 52));
             int exp2 = rawExp == 0 ? -1074 : rawExp - 1075;
-            // Chuẩn hóa: bỏ bit 0 cuối để mant lẻ (không đổi giá trị).
+            // Normalize: strip trailing zero bits so that mant is odd (value unchanged).
             while (!mant.IsZero && mant.IsEven) { mant >>= 1; exp2++; }
 
             int topBit = BitLength(mant) - 1 + exp2;
             int ulpExp = Math.Max(topBit - (mantissaBits - 1), minExponent);
             bool powerOfTwo = (mant & (mant - 1)).IsZero;
             int lowUlpExp = (powerOfTwo && topBit - (mantissaBits - 1) > minExponent) ? ulpExp - 1 : ulpExp;
-            // Phần định trị trong kiểu đích chẵn -> điểm giữa được làm tròn về chính nó.
+            // Even mantissa in the target type -> a midpoint rounds to the value itself.
             bool evenMantissa = exp2 > ulpExp || (exp2 == ulpExp && mant.IsEven);
 
             int shift = Math.Max(0, -Math.Min(exp2, lowUlpExp - 1));
             BigInteger V = mant << (exp2 + shift);
             BigInteger halfUp = BigInteger.One << (ulpExp - 1 + shift);
             BigInteger halfLow = BigInteger.One << (lowUlpExp - 1 + shift);
-            BigInteger scale = BigInteger.One << shift; // giá trị thực = X / scale
+            BigInteger scale = BigInteger.One << shift; // actual value = X / scale
 
             int k = (int)Math.Floor(Math.Log10(a));
             while (Compare(V, scale, k) < 0) { k--; }
@@ -297,18 +297,18 @@ namespace SynodeExporter.Core
                 BigInteger twice = rem * 2;
                 if (twice > den || (twice == den && !n.IsEven)) { n += 1; }
 
-                // Kiểm tra D = n*10^q nằm trong khoảng làm tròn về v (đơn vị chung).
+                // Check that D = n*10^q lies within the interval that rounds to v (common units).
                 BigInteger dUnits, vUnits, up, low;
                 if (q >= 0)
                 {
-                    dUnits = n * BigInteger.Pow(10, q) * scale; // theo đơn vị 1/scale
+                    dUnits = n * BigInteger.Pow(10, q) * scale; // in units of 1/scale
                     vUnits = V;
                     up = halfUp;
                     low = halfLow;
                 }
                 else
                 {
-                    BigInteger p10 = BigInteger.Pow(10, -q); // nhân cả hai vế với 10^-q
+                    BigInteger p10 = BigInteger.Pow(10, -q); // multiply both sides by 10^-q
                     dUnits = n * scale;
                     vUnits = num;
                     up = halfUp * p10;
@@ -325,17 +325,17 @@ namespace SynodeExporter.Core
                 int exponent = k;
                 if (digits.Length > p)
                 {
-                    // Làm tròn lên thành 10^p.
+                    // Rounded up to 10^p.
                     digits = digits.Substring(0, p);
                     exponent++;
                 }
-                // .NET Core / System.Text.Json: dạng cố định khi -5 < số mũ < số chữ số round-trip tối đa (9 float, 17 double).
+                // .NET Core / System.Text.Json: fixed-point notation when -5 < exponent < maximum round-trip digits (9 float, 17 double).
                 return (negative ? "-" : "") + FormatG(digits.TrimEnd('0'), exponent, maxDigits);
             }
             return v.ToString("R", CultureInfo.InvariantCulture);
         }
 
-        /// <summary>Dạng cố định khi -5 &lt; exp &lt; precision, ngược lại dạng d.dddE±XX (như .NET Core).</summary>
+        /// <summary>Fixed-point notation when -5 &lt; exp &lt; precision, otherwise d.dddE±XX notation (as in .NET Core).</summary>
         private static string FormatG(string digits, int exponent, int precision)
         {
             if (digits.Length == 0)
@@ -358,7 +358,7 @@ namespace SynodeExporter.Core
             return mantissa + "E" + (exponent < 0 ? "-" : "+") + Math.Abs(exponent).ToString("00", CultureInfo.InvariantCulture);
         }
 
-        /// <summary>So sánh V/scale với 10^k.</summary>
+        /// <summary>Compares V/scale with 10^k.</summary>
         private static int Compare(BigInteger V, BigInteger scale, int k)
         {
             return k >= 0 ? V.CompareTo(scale * BigInteger.Pow(10, k)) : (V * BigInteger.Pow(10, -k)).CompareTo(scale);

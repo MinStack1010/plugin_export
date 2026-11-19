@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace SynodeExporter.Core
 {
     /// <summary>
-    /// So sánh đỉnh (position, normal) giống VertexPositionNormal của SharpGLTF:
-    /// so sánh float ==, nên -0 == +0 (hash được chuẩn hóa tương ứng).
+    /// Compares vertices (position, normal) like VertexPositionNormal in SharpGLTF:
+    /// float == comparison, so -0 == +0 (the hash is normalized accordingly).
     /// </summary>
     public sealed class VertexKeyComparer : IEqualityComparer<VertexKey>
     {
@@ -51,12 +51,12 @@ namespace SynodeExporter.Core
     }
 
     /// <summary>
-    /// Gom tam giác thành mesh. Tái hiện SolidWorksGeometryExtractor.AddTessellationFacet
-    /// + GetTessellationNormal và PrimitiveBuilder.AddTriangle của SharpGLTF:
-    /// * normal được chuẩn hóa (float32);
-    /// * bỏ tam giác suy biến (|cross|^2 &lt; 1e-20);
-    /// * đảo chiều quấn khi normal hình học ngược hướng normal trung bình;
-    /// * đỉnh trùng (position, normal) được dùng chung; tam giác bị suy biến sau khi gộp đỉnh thì bỏ.
+    /// Collects triangles into a mesh. Reproduces SolidWorksGeometryExtractor.AddTessellationFacet
+    /// + GetTessellationNormal and PrimitiveBuilder.AddTriangle of SharpGLTF:
+    /// * normals are normalized (float32);
+    /// * degenerate triangles are dropped (|cross|^2 &lt; 1e-20);
+    /// * the winding is flipped when the geometric normal points away from the average normal;
+    /// * duplicate vertices (position, normal) are shared; triangles that become degenerate after merging are dropped.
     /// </summary>
     public sealed class MeshAccumulator
     {
@@ -74,7 +74,7 @@ namespace SynodeExporter.Core
 
         public int ZeroNormalCount { get; private set; }
 
-        /// <summary>Thêm một tam giác. Vị trí tính bằng mét; normal có thể null hoặc chưa chuẩn hóa.</summary>
+        /// <summary>Adds a triangle. Positions are in meters; normals may be null or not normalized.</summary>
         public bool AddTriangle(Vec3 p0, Vec3 p1, Vec3 p2, Vec3? n0, Vec3? n1, Vec3? n2)
         {
             if (!p0.IsFinite() || !p1.IsFinite() || !p2.IsFinite())
@@ -131,8 +131,8 @@ namespace SynodeExporter.Core
             {
                 return unit;
             }
-            // SW ném lỗi khi gặp normal bằng 0; facet của Solid Edge có thể không có
-            // normal (hoặc normal suy biến tại điểm kỳ dị) nên dùng normal của facet.
+            // SW throws on zero normals; Solid Edge facets may have no normals
+            // (or degenerate normals at singular points), so the facet normal is used instead.
             ZeroNormalCount++;
             return fallback;
         }
@@ -155,7 +155,7 @@ namespace SynodeExporter.Core
 
     public static class MeshValidator
     {
-        /// <summary>Port của ValidateExtractedMesh (SW) + kiểm tra số hữu hạn.</summary>
+        /// <summary>Port of ValidateExtractedMesh (SW) + finite number checks.</summary>
         public static void Validate(ExtractedMesh mesh)
         {
             if (mesh.VertexCount == 0)
@@ -200,10 +200,10 @@ namespace SynodeExporter.Core
     }
 
     /// <summary>
-    /// Đọc dữ liệu facet trả về bởi Face.GetFacetData của Solid Edge:
-    /// Points = FacetCount*3 đỉnh * 3 tọa độ (mét); Normals = mỗi đỉnh (FacetCount*9)
-    /// hoặc mỗi facet (FacetCount*3) hoặc rỗng. SAFEARRAY có thể có chỉ số
-    /// bắt đầu khác 0 nên được đọc qua GetValue theo chỉ số tuyến tính.
+    /// Reads the facet data returned by Solid Edge Face.GetFacetData:
+    /// Points = FacetCount*3 vertices * 3 coordinates (meters); Normals = per vertex (FacetCount*9)
+    /// or per facet (FacetCount*3) or empty. The SAFEARRAY may have a non-zero lower
+    /// bound, so it is read through enumeration in linear order.
     /// </summary>
     public static class FacetReader
     {
@@ -250,7 +250,7 @@ namespace SynodeExporter.Core
             return added;
         }
 
-        /// <summary>Chuyển mảng COM (double/float/object, mọi chỉ số gốc, 1 hoặc nhiều chiều) thành double[].</summary>
+        /// <summary>Converts a COM array (double/float/object, any lower bound, 1 or more dimensions) to double[].</summary>
         public static double[] ToDoubles(object value)
         {
             var array = value as Array;

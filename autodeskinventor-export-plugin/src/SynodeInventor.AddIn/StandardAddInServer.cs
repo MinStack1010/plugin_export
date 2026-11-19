@@ -9,8 +9,8 @@ using Inv = global::Inventor;
 namespace Synode.Inventor.AddIn
 {
     /// <summary>
-    /// Điểm vào add-in. Inventor tạo lớp này theo ClassId trong file Synode.InventorExporter.addin
-    /// (không cần đăng ký COM/RegAsm). Tương đương SwAddin (ConnectToSW/DisconnectFromSW) của plugin SolidWorks.
+    /// Add-in entry point. Inventor creates this class from the ClassId in Synode.InventorExporter.addin
+    /// (no COM registration/RegAsm needed). Equivalent to SwAddin (ConnectToSW/DisconnectFromSW) in the SolidWorks plugin.
     /// </summary>
     [Guid(AddInIds.AddInGuid)]
     [ComVisible(true)]
@@ -47,7 +47,7 @@ namespace Synode.Inventor.AddIn
             }
             catch (Exception ex)
             {
-                // Ghi log rồi ném lại để Inventor biết add-in nạp thất bại (không nuốt lỗi).
+                // Log, then rethrow so Inventor knows the add-in failed to load (do not swallow the error).
                 _log.Error("Activate failed.", ex);
                 throw;
             }
@@ -74,12 +74,12 @@ namespace Synode.Inventor.AddIn
             }
         }
 
-        /// <summary>Không dùng (API cũ, Inventor dùng ControlDefinitions thay thế).</summary>
+        /// <summary>Not used (legacy API; Inventor uses ControlDefinitions instead).</summary>
         public void ExecuteCommand(int commandID)
         {
         }
 
-        /// <summary>Không cung cấp API automation.</summary>
+        /// <summary>No automation API is exposed.</summary>
         public object? Automation => null;
 
         private IntPtr MainWindowHandle()

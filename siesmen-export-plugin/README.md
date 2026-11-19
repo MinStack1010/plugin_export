@@ -1,138 +1,131 @@
 # Synode NX GLB Exporter
 
-Plugin cho **Siemens NX** dùng để export part hoặc assembly đang hiển thị ra file **GLB (binary glTF 2.0)**. Plugin được viết lại từ plugin SOLIDWORKS `PluginSynode` (lệnh *Export to GLB*), nằm ở `..\solidworks-export-plugin` (project đó không bị chỉnh sửa).
+A **Siemens NX** plugin that exports the displayed part or assembly to a **GLB (binary glTF 2.0)** file. It is a rewrite of the SOLIDWORKS plugin `PluginSynode` (*Export to GLB* command) located in `..\solidworks-export-plugin` (that project is not modified).
 
 > [!IMPORTANT]
-> Plugin **chưa được chạy trong một phiên NX thật**. Trên máy phát triển (Designcenter NX 2606 Student Edition), `run_journal.exe` báo lỗi license: *"SPLM_LICENSE_SERVER needs to point to a license server"*. Toàn bộ logic đã được kiểm thử bằng test double và đối chiếu với writer gốc của SOLIDWORKS, nhưng phần gọi NX Open (UF_FACET, GetPosition, file box, menu/ribbon) vẫn cần bạn kiểm tra trực tiếp trong NX. Xem mục [Kiểm thử trong NX](#kiểm-thử-trong-nx).
+> The plugin **has not yet been run in a real NX session**. On the development machine (Designcenter NX 2606 Student Edition), `run_journal.exe` reports a license error: *"SPLM_LICENSE_SERVER needs to point to a license server"*. The NX-independent logic was checked outside NX and the GLB writer layout was designed to match the original SOLIDWORKS writer, but the NX Open calls (UF_FACET, GetPosition, file box, menu/ribbon) still need to be verified directly in NX. See [Testing in NX](#testing-in-nx).
 
-## 1. Tính năng
+## 1. Features
 
-| Tính năng | Mô tả |
+| Feature | Description |
 |---|---|
-| Lệnh *Export to GLB* | Menu **Synode › Export to GLB**, tab ribbon **Synode**, hoặc chạy journal bằng File › Execute › NX Open (Ctrl+U) |
-| Phạm vi export | Display Part (part hoặc assembly). Plugin SW dùng tài liệu đang active |
-| Hierarchy | Root = tên part; mỗi component occurrence là một node glTF, giữ quan hệ cha–con, kể cả nested assembly |
-| Transform | Ma trận local = `inverse(world cha) × world` (giống SW). Có kiểm tra quy ước ma trận `GetPosition` bằng hình học thật lúc chạy |
-| Đơn vị | Chuyển đơn vị part (mm, inch, m, µm) sang mét. Hỗ trợ part con có đơn vị khác assembly |
-| Instance dùng chung part | Mỗi occurrence có node và transform riêng; mỗi body chỉ tessellate một lần (cache theo prototype) |
-| Multi-body | Mọi solid body nhìn thấy được; mỗi body chia thành các mesh theo vật liệu (`<node>_Material_<i>`, giống SW) |
-| Màu và độ trong suốt | Màu hiển thị của NX (kể cả màu override trong assembly) và translucency → `baseColorFactor` (sRGB → linear), `alphaMode BLEND` |
-| Lọc body | Bỏ qua sheet body, body bị blank, body nằm trên layer ẩn, body ngoài reference set, component bị suppress |
-| An toàn dữ liệu | Không sửa và không lưu model. Facet model tạm luôn được xóa. GLB được ghi atomic (không để lại file hỏng) |
-| Thông báo | Hộp thoại thành công/lỗi giống SW; có log `%TEMP%\SynodeNX\synode_nx_export.log` |
-| Batch | `run_journal.exe synode_export_glb.py -args <model.prt> <out.glb>` (cần license NX hợp lệ) |
+| *Export to GLB* command | Menu **Synode › Export to GLB**, ribbon tab **Synode**, or run the journal via File › Execute › NX Open (Ctrl+U) |
+| Export scope | Display Part (part or assembly). The SW plugin uses the active document |
+| Hierarchy | Root = part name; each component occurrence is a glTF node, preserving parent–child relationships, including nested assemblies |
+| Transform | Local matrix = `inverse(parent world) × world` (same as SW). The `GetPosition` matrix convention is checked against real geometry at run time |
+| Units | Converts part units (mm, inch, m, µm) to meters. Supports child parts whose units differ from the assembly |
+| Instances sharing a part | Each occurrence has its own node and transform; each body is tessellated only once (cached per prototype) |
+| Multi-body | All visible solid bodies; each body is split into meshes by material (`<node>_Material_<i>`, same as SW) |
+| Color and transparency | NX display color (including assembly color overrides) and translucency → `baseColorFactor` (sRGB → linear), `alphaMode BLEND` |
+| Body filtering | Skips sheet bodies, blanked bodies, bodies on hidden layers, bodies outside the reference set, and suppressed components |
+| Data safety | Does not modify or save the model. The temporary facet model is always deleted. The GLB is written atomically (no corrupt file is left behind) |
+| Notifications | Success/error dialogs like SW; log at `%TEMP%\SynodeNX\synode_nx_export.log` |
+| Batch | `run_journal.exe synode_export_glb.py -args <model.prt> <out.glb>` (requires a valid NX license) |
 
-## 2. Yêu cầu
+## 2. Requirements
 
-- Windows 10/11 x64, Siemens NX có **NX Open for Python** (`NXBIN\python\NXOpen.pyd`). Plugin được viết và kiểm tra API theo **NX 2606** (Designcenter NX 2606.3002). Các bản NX khác dùng Python 3 có thể chạy được, nhưng **chưa được kiểm chứng**.
-- License:
-  - Chạy journal Python (không compile, không ký) **không** cần license NX Open Author.
-  - `UF_FACET_facet_solid` cần license **ASSEMBLIES MODULE** (theo docstring của NXOpen_UF NX 2606).
-  - Chạy batch (`run_journal.exe`) cần license server / license batch hợp lệ.
-- Không cần cài thêm thư viện Python nào: writer GLB viết bằng thư viện chuẩn của Python.
+- Windows 10/11 x64, Siemens NX with **NX Open for Python** (`NXBIN\python\NXOpen.pyd`). The plugin was written and its API usage checked against **NX 2606** (Designcenter NX 2606.3002). Other NX versions that use Python 3 may work but are **not verified**.
+- Licenses:
+  - Running a Python journal (not compiled, not signed) does **not** require an NX Open Author license.
+  - `UF_FACET_facet_solid` requires the **ASSEMBLIES MODULE** license (according to the NXOpen_UF docstring in NX 2606).
+  - Batch runs (`run_journal.exe`) require a valid license server / batch license.
+- No additional Python libraries are needed: the GLB writer uses only the Python standard library.
 
-## 3. Công nghệ
+## 3. Technology
 
-- Python 3.12 (interpreter có sẵn trong NX), NX Open (`NXOpen`, `NXOpen.UF`).
-- Lý do chọn Python thay vì C#/C++: không cần compile, không cần ký DLL hay license Author, và chạy trực tiếp bằng MenuScript hoặc Ctrl+U. Tất cả API cần dùng (Session, Part, ComponentAssembly, Component, Body/Face, UF_FACET, UF_OBJ, UF_UI file box, NXMessageBox) đều có trong Python.
-- Writer GLB: viết lại bằng Python thuần, mô phỏng đúng output của SharpGLTF 1.0.6 mà plugin SW dùng. Đã đối chiếu byte-by-byte.
-- Test: `unittest`. `PyHost` (C#) dùng để chạy Python của NX ngoài NX. `ReferenceSw` (C#) biên dịch **nguyên bản** writer của plugin SW (`Export\*.cs` + SharpGLTF) để so sánh.
+- Python 3.12 (the interpreter bundled with NX), NX Open (`NXOpen`, `NXOpen.UF`).
+- Why Python instead of C#/C++: no compilation, no DLL signing or Author license, and it runs directly from MenuScript or Ctrl+U. All required APIs (Session, Part, ComponentAssembly, Component, Body/Face, UF_FACET, UF_OBJ, UF_UI file box, NXMessageBox) are available in Python.
+- GLB writer: rewritten in pure Python to reproduce the output of SharpGLTF 1.0.6 used by the SW plugin. Its binary layout and JSON structure were designed to match the SOLIDWORKS writer.
 
-## 4. Cấu trúc source
+## 4. Source layout
 
 ```
 siesmen-export-plugin/
-├─ install.ps1 / uninstall.ps1          # cài đặt và gỡ cài đặt (Windows, theo user)
-├─ nx_plugin/                           # thư mục NX user dir (UGII_USER_DIR)
-│  ├─ startup/
-│  │  ├─ synode_glb_exporter.men        # MenuScript: menu "Synode > Export to GLB"
-│  │  └─ synode_glb_exporter.rtb        # tab ribbon "Synode"
-│  └─ application/
-│     ├─ synode_export_glb.py           # journal entry point (ACTIONS của menu/ribbon)
-│     ├─ synode_nx_exporter.json.example
-│     └─ synode_nx_exporter/
-│        ├─ config.py                   # ExportOptions + file JSON
-│        ├─ errors.py, logger.py
-│        ├─ scene.py                    # ExtractedScene/Node/Mesh/Material (giống SW)
-│        ├─ matrix.py                   # ma trận 4x4 (bố cục System.Numerics)
-│        ├─ materials.py                # sRGB→linear, alpha, so sánh vật liệu
-│        ├─ mesh_builder.py             # gộp đỉnh, normal, kiểm tra mesh
-│        ├─ coordinate_converter.py     # port CoordinateConverter (normalize float32)
-│        ├─ gltf_writer.py              # port GltfSceneWriter (SharpGLTF layout)
-│        ├─ output_path.py              # kiểm tra đường dẫn, quyền ghi, ghi atomic
-│        ├─ exporter.py                 # scene → converter → GLB
-│        └─ nx/                         # phần phụ thuộc NX Open
-│           ├─ __init__.py              # NxContext (Session, UFSession, UI)
-│           ├─ command.py               # lệnh Export (port ExportGlbCommand)
-│           ├─ extractor.py             # duyệt assembly, transform, body (port SolidWorksGeometryExtractor)
-│           ├─ tessellator.py           # UF_FACET
-│           ├─ appearance.py            # màu/translucency
-│           ├─ units.py                 # đơn vị part
-│           └─ ui.py                    # file box, message box, chế độ batch
-└─ tests/
-   ├─ run_tests.ps1 / run_tests.py      # build công cụ test và chạy toàn bộ test
-   ├─ unit/                             # test_core.py, test_nx_adapter.py
-   ├─ compat/test_reference_sw.py       # so sánh với writer SOLIDWORKS gốc
-   ├─ fakes/fake_nx.py                  # TEST DOUBLE của NX Open (không phải NX thật)
-   ├─ reference_sw/                     # ReferenceSw.csproj (link read-only tới source SW)
-   └─ tools/                            # pyhost, glb_reader, scene_json, synthetic_scenes
+├─ install.ps1 / uninstall.ps1          # install and uninstall (Windows, per user)
+├─ solid_plugin/                        # separate Solid Edge exporter (see its own README)
+└─ nx_plugin/                           # NX user directory (UGII_USER_DIR)
+   ├─ startup/
+   │  ├─ synode_glb_exporter.men        # MenuScript: menu "Synode > Export to GLB"
+   │  └─ synode_glb_exporter.rtb        # ribbon tab "Synode"
+   └─ application/
+      ├─ synode_export_glb.py           # journal entry point (ACTIONS of the menu/ribbon)
+      ├─ synode_nx_exporter.json.example
+      └─ synode_nx_exporter/
+         ├─ config.py                   # ExportOptions + JSON file
+         ├─ errors.py, logger.py
+         ├─ scene.py                    # ExtractedScene/Node/Mesh/Material (same as SW)
+         ├─ matrix.py                   # 4x4 matrices (System.Numerics layout)
+         ├─ materials.py                # sRGB→linear, alpha, material comparison
+         ├─ mesh_builder.py             # vertex merging, normals, mesh validation
+         ├─ coordinate_converter.py     # port of CoordinateConverter (float32 normalization)
+         ├─ gltf_writer.py              # port of GltfSceneWriter (SharpGLTF layout)
+         ├─ output_path.py              # path validation, write permission, atomic write
+         ├─ exporter.py                 # scene → converter → GLB
+         └─ nx/                         # NX Open-dependent code
+            ├─ __init__.py              # NxContext (Session, UFSession, UI)
+            ├─ command.py               # Export command (port of ExportGlbCommand)
+            ├─ extractor.py             # assembly traversal, transforms, bodies (port of SolidWorksGeometryExtractor)
+            ├─ tessellator.py           # UF_FACET
+            ├─ appearance.py            # color/translucency
+            ├─ units.py                 # part units
+            └─ ui.py                    # file box, message box, batch mode
 ```
 
-## 5. Cài đặt
+## 5. Installation
 
 ```powershell
 cd C:\plugin_export_3d\siesmen-export-plugin
-powershell -ExecutionPolicy Bypass -File .\install.ps1 -WhatIf   # chỉ kiểm tra, không thay đổi gì
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -WhatIf   # check only, changes nothing
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-Script sẽ **kiểm tra trước** rồi mới thay đổi:
+The script **checks first** and only then makes changes:
 
-1. Tìm NX (`-NxRoot`, `UGII_BASE_DIR` hoặc `Program Files\Siemens\*\NXBIN\ugraf.exe`), in phiên bản từ `ugraf.exe`.
-2. Kiểm tra `NXBIN\python\NXOpen*.pyd` và các file của plugin.
-3. Chọn thư mục đích:
-   - Nếu đã có `UGII_USER_DIR`: thêm file vào đó, không động tới file khác.
-   - Nếu chưa có: copy vào `%LOCALAPPDATA%\SynodeNX\nx_plugin` và đặt biến môi trường **User** `UGII_USER_DIR`.
-   - `-Target <thư mục>`: cài vào thư mục chỉ định, không đổi biến môi trường.
-4. Ghi `synode_install_manifest.json`. Nếu plugin đã được cài thì dừng lại, trừ khi dùng `-Force`.
+1. Locates NX (`-NxRoot`, `UGII_BASE_DIR` or `Program Files\Siemens\*\NXBIN\ugraf.exe`) and prints the version from `ugraf.exe`.
+2. Checks `NXBIN\python\NXOpen*.pyd` and the plugin files.
+3. Chooses the destination folder:
+   - If `UGII_USER_DIR` is already set: adds the files there without touching other files.
+   - If it is not set: copies to `%LOCALAPPDATA%\SynodeNX\nx_plugin` and sets the **User** environment variable `UGII_USER_DIR`.
+   - `-Target <folder>`: installs into the given folder without changing environment variables.
+4. Writes `synode_install_manifest.json`. If the plugin is already installed, the script stops unless `-Force` is used.
 
-Sau khi cài, **khởi động lại NX**. Gỡ cài đặt: `powershell -ExecutionPolicy Bypass -File .\uninstall.ps1` (chỉ xóa đúng những gì có trong manifest; chỉ xóa `UGII_USER_DIR` nếu script đã tạo biến đó).
+After installing, **restart NX**. To uninstall: `powershell -ExecutionPolicy Bypass -File .\uninstall.ps1` (removes only what is listed in the manifest; removes `UGII_USER_DIR` only if the install script created it).
 
-Cài thủ công: copy `nx_plugin\startup\*` và `nx_plugin\application\*` vào `<UGII_USER_DIR>\startup` và `<UGII_USER_DIR>\application`.
+Manual installation: copy `nx_plugin\startup\*` and `nx_plugin\application\*` to `<UGII_USER_DIR>\startup` and `<UGII_USER_DIR>\application`.
 
-## 6. Sử dụng
+## 6. Usage
 
-1. Mở part hoặc assembly trong NX (đây sẽ là Display Part).
-2. Chọn **Menu › Synode › Export to GLB**, tab ribbon **Synode › Export to GLB**, hoặc **File › Execute › NX Open…** (Ctrl+U) rồi chọn `application\synode_export_glb.py`.
-3. Chọn đường dẫn `.glb`. Mặc định là thư mục của part và tên `nx-export.glb`. Nếu file đã tồn tại, plugin sẽ hỏi trước khi ghi đè.
-4. Sau khi export, plugin hiện thông báo *"GLB exported successfully: <path>"* (kèm số cảnh báo nếu có), hoặc hộp thoại lỗi.
+1. Open a part or assembly in NX (it becomes the Display Part).
+2. Choose **Menu › Synode › Export to GLB**, the ribbon tab **Synode › Export to GLB**, or **File › Execute › NX Open…** (Ctrl+U) and select `application\synode_export_glb.py`.
+3. Choose the `.glb` path. The default is the part's folder with the name `nx-export.glb`. If the file already exists, the plugin asks before overwriting it.
+4. After the export, the plugin shows *"GLB exported successfully: <path>"* (with the number of warnings, if any), or an error dialog.
 
-Batch, không có UI (cần license batch):
+Batch, without UI (requires a batch license):
 
 ```bat
 "%UGII_BASE_DIR%\NXBIN\run_journal.exe" "%UGII_USER_DIR%\application\synode_export_glb.py" -args "D:\models\asm.prt" "D:\out\asm.glb"
 ```
 
-Tùy chọn: copy `synode_nx_exporter.json.example` thành `synode_nx_exporter.json` cạnh journal, hoặc trỏ biến `SYNODE_NX_EXPORTER_CONFIG` tới file JSON. Các khóa chính: `chord_tolerance_mm`, `angular_tolerance_deg`, `component_name_style` (`path`/`leaf`), `include_root_part_bodies`, `share_instance_meshes`, `skip_hidden_layer_bodies`, `unit_scale`, `log_directory`. Khóa không hợp lệ sẽ bị báo lỗi.
+Options: copy `synode_nx_exporter.json.example` to `synode_nx_exporter.json` next to the journal, or point the `SYNODE_NX_EXPORTER_CONFIG` variable to a JSON file. Main keys: `chord_tolerance_mm`, `angular_tolerance_deg`, `component_name_style` (`path`/`leaf`), `include_root_part_bodies`, `share_instance_meshes`, `skip_hidden_layer_bodies`, `unit_scale`, `log_directory`. Invalid keys are reported as errors.
 
-### Tích hợp menu/ribbon
+### Menu/ribbon integration
 
-- `startup\synode_glb_exporter.men` (VERSION 120, `EDIT UG_GATEWAY_MAIN_MENUBAR`, `BEFORE UG_HELP`) tạo menu **Synode** có nút `SYNODE_EXPORT_GLB`, với `ACTIONS synode_export_glb.py` (NX tìm file trong `application` của `UGII_USER_DIR`).
-- `startup\synode_glb_exporter.rtb` tạo tab **Synode**, nhóm *Synode GLB Exporter*, dùng lại nút `SYNODE_EXPORT_GLB`. Nếu tab không tự hiện, nhấn chuột phải vào ribbon và bật tab **Synode**. Nút ribbon và menu cùng chạy một lệnh export thật.
-- Cú pháp được đối chiếu với các file menu/ribbon của NX 2606 (`UGII\menus\*.men`, `*.rtb`). Không có file NX gốc nào dùng `.py` làm ACTIONS; việc này dựa trên tài liệu MenuScript của Siemens và **cần kiểm tra trong NX**. Nếu menu không xuất hiện, hãy dùng Ctrl+U (luôn chạy được) và xem syslog của NX (Help › Log File) để tìm lỗi khi nạp file menu.
+- `startup\synode_glb_exporter.men` (VERSION 120, `EDIT UG_GATEWAY_MAIN_MENUBAR`, `BEFORE UG_HELP`) creates the **Synode** menu with the `SYNODE_EXPORT_GLB` button and `ACTIONS synode_export_glb.py` (NX looks for the file in the `application` folder of `UGII_USER_DIR`).
+- `startup\synode_glb_exporter.rtb` creates the **Synode** tab with the *Synode GLB Exporter* group, reusing the `SYNODE_EXPORT_GLB` button. If the tab does not appear automatically, right-click the ribbon and enable the **Synode** tab. The ribbon button and the menu run the same export command.
+- The syntax was compared with the NX 2606 menu/ribbon files (`UGII\menus\*.men`, `*.rtb`). No stock NX file uses a `.py` file as ACTIONS; this relies on the Siemens MenuScript documentation and **must be verified in NX**. If the menu does not appear, use Ctrl+U (always works) and check the NX syslog (Help › Log File) for errors while loading the menu file.
 
-## 7. Định dạng output (giống plugin SOLIDWORKS)
+## 7. Output format (same as the SOLIDWORKS plugin)
 
-- GLB 2.0, có một scene. Node gốc = tên part (`Part.Leaf`), node con là component. Node nhận `matrix` khi transform khác identity.
-- Tên node: `"<tên part>-<n>"` (n đánh số theo từng cha). Kiểu `path` nối theo cha (`"sub_a-1/bolt-2"`), giống chuỗi `Component2.Name2` của SW.
-- Mỗi `ExtractedMesh` là một glTF mesh có một primitive tam giác. Mesh đầu tiên gắn vào node, các mesh tiếp theo gắn vào node con không tên (giống SharpGLTF).
-- `POSITION`/`NORMAL` float32 interleaved (stride 24), đơn vị mét, **không đổi trục** (giống SW). Index dùng uint16, hoặc uint32 cho toàn file khi có mesh vượt 65535 đỉnh.
-- Material: `pbrMetallicRoughness` (`baseColorFactor` linear, metallic 0, roughness 0), `doubleSided: true`, `alphaMode: BLEND` khi trong suốt. Tên là `<body>_Material` hoặc `<body>_Face_Material`.
-- `asset.generator` = `"Synode NX GLB Exporter 1.0.0"` (SW: chuỗi của SharpGLTF).
+- GLB 2.0 with a single scene. Root node = part name (`Part.Leaf`); child nodes are components. A node gets a `matrix` when its transform is not the identity.
+- Node names: `"<part name>-<n>"` (n numbered per parent). The `path` style joins names along the parents (`"sub_a-1/bolt-2"`), like the SW `Component2.Name2` string.
+- Each `ExtractedMesh` is a glTF mesh with one triangle primitive. The first mesh is attached to the node; additional meshes are attached to unnamed child nodes (same as SharpGLTF).
+- `POSITION`/`NORMAL` float32 interleaved (stride 24), in meters, **no axis conversion** (same as SW). Indices are uint16, or uint32 for the whole file when any mesh exceeds 65535 vertices.
+- Material: `pbrMetallicRoughness` (linear `baseColorFactor`, metallic 0, roughness 0), `doubleSided: true`, `alphaMode: BLEND` when transparent. The name is `<body>_Material` or `<body>_Face_Material`.
+- `asset.generator` = `"Synode NX GLB Exporter 1.0.0"` (SW: the SharpGLTF string).
 
-## 8. Ví dụ
+## 8. Example
 
-Assembly `main_assembly` gồm `sub_a(bolt ×2)`, `sub_b(plate)`, `bracket`:
+Assembly `main_assembly` containing `sub_a(bolt ×2)`, `sub_b(plate)`, `bracket`:
 
 ```
 main_assembly
@@ -140,60 +133,51 @@ main_assembly
 │  ├─ sub_a-1/bolt-1  mesh sub_a-1/bolt-1_Material_0
 │  └─ sub_a-1/bolt-2  mesh ... (rotX 30°)
 ├─ sub_b-1
-│  └─ sub_b-1/plate-1 mesh _Material_0 + node con không tên (mesh _Material_1, BLEND)
-└─ bracket-1          2 body → 2 mesh
+│  └─ sub_b-1/plate-1 mesh _Material_0 + unnamed child node (mesh _Material_1, BLEND)
+└─ bracket-1          2 bodies → 2 meshes
 ```
 
-## 9. Kiểm thử
+## 9. Testing in NX
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tests\run_tests.ps1            # build PyHost + ReferenceSw, chạy tất cả
-powershell -ExecutionPolicy Bypass -File .\tests\run_tests.ps1 -Python C:\Python312\python.exe -SkipReference
-```
+1. Run `install.ps1`, start NX, and check that the **Synode** menu and **Synode** tab are present.
+2. Open a single part and export it. Open the file in a glTF viewer (for example https://gltf-viewer.donmccurdy.com or Windows 3D Viewer) and compare the dimensions (in meters) with NX (Analysis › Measure).
+3. Open an assembly with nested sub-assemblies, repeated components and rotated components. Check the node tree and positions. In the log, the line *"Component orientation convention confirmed: rows/columns"* shows the result of the `GetPosition` check.
+4. Check assembly color overrides, transparent bodies, hidden layers, blanked bodies, and parts in inches.
+5. Try an invalid path and a read-only folder (an error dialog must appear and no file must be created).
+6. Close all parts and run the command: *"No active NX part…"* must be shown.
+7. Send `%TEMP%\SynodeNX\synode_nx_export.log` if an error occurs.
 
-Kết quả gần nhất: static checks (29 file Python, import 19 module không cần NXOpen) + **59 test PASS**. Trong đó 9 test so sánh với writer SW gốc, kiểm tra BIN giống từng byte và JSON giống hệt (trừ `generator`). Các tình huống 1–10 (không có part, part, assembly, nested, instance dùng chung, transform, multi-body, đường dẫn sai, không có quyền ghi, geometry không hỗ trợ) được kiểm tra bằng **test double** (`tests\fakes\fake_nx.py`). Test double không thay thế được NX thật.
+## 10. Common errors
 
-### Kiểm thử trong NX
-
-1. Chạy `install.ps1`, khởi động NX, kiểm tra có menu **Synode** và tab **Synode** hay không.
-2. Mở một part đơn rồi export. Mở file trong viewer glTF (ví dụ https://gltf-viewer.donmccurdy.com hoặc Windows 3D Viewer), so kích thước (mét) với NX (Analysis › Measure).
-3. Mở assembly có nested sub-assembly, component lặp lại, component bị xoay. Kiểm tra cây node và vị trí. Trong log, dòng *"Component orientation convention confirmed: rows/columns"* cho biết kết quả kiểm tra `GetPosition`.
-4. Kiểm tra màu override trong assembly, body trong suốt, layer ẩn, body bị blank, part dùng inch.
-5. Thử đường dẫn không hợp lệ và thư mục chỉ đọc (cần hiện hộp thoại lỗi, không tạo file).
-6. Đóng mọi part rồi chạy lệnh: phải hiện *"No active NX part…"*.
-7. Gửi lại `%TEMP%\SynodeNX\synode_nx_export.log` nếu có lỗi.
-
-## 10. Lỗi thường gặp
-
-| Thông báo | Nguyên nhân / cách xử lý |
+| Message | Cause / solution |
 |---|---|
-| `No active NX part. Open a part or an assembly first.` | Chưa mở part (Display Part rỗng) |
-| `Only parts and assemblies are supported.` | Display Part không phải `NXOpen.Part` (ví dụ drawing-only hoặc loại khác) |
-| `The output folder does not exist` / `No permission to write…` / `…read-only` | Chọn thư mục khác; file đang mở trong chương trình khác |
-| `The output file must have the .glb extension` | Đổi đuôi file thành `.glb` |
-| `The model contains no exportable solid geometry.` | Không có solid body nhìn thấy được (sheet, blank, layer ẩn, ngoài reference set) |
-| Body bị bỏ qua, có cảnh báo `could not be tessellated` | UF_FACET lỗi hoặc thiếu license ASSEMBLIES; xem log |
-| Menu không xuất hiện | `UGII_USER_DIR` chưa được NX đọc (khởi động lại NX), hoặc ACTIONS `.py` không được bản NX hỗ trợ → dùng Ctrl+U |
-| `License Error, SPLM_LICENSE_SERVER…` (batch) | Batch cần license server; hãy chạy trong phiên NX tương tác |
+| `No active NX part. Open a part or an assembly first.` | No part is open (Display Part is empty) |
+| `Only parts and assemblies are supported.` | The Display Part is not an `NXOpen.Part` (e.g. drawing-only or another type) |
+| `The output folder does not exist` / `No permission to write…` / `…read-only` | Choose another folder; the file may be open in another program |
+| `The output file must have the .glb extension` | Change the file extension to `.glb` |
+| `The model contains no exportable solid geometry.` | No visible solid body (sheet, blanked, hidden layer, outside the reference set) |
+| Body skipped with a `could not be tessellated` warning | UF_FACET failed or the ASSEMBLIES license is missing; see the log |
+| Menu does not appear | NX has not read `UGII_USER_DIR` (restart NX), or `.py` ACTIONS are not supported by this NX version → use Ctrl+U |
+| `License Error, SPLM_LICENSE_SERVER…` (batch) | Batch mode requires a license server; run in an interactive NX session |
 
-## 11. Khác biệt so với plugin SOLIDWORKS
+## 11. Differences from the SOLIDWORKS plugin
 
-| Mục | SOLIDWORKS | NX plugin |
+| Item | SOLIDWORKS | NX plugin |
 |---|---|---|
-| Tích hợp | COM add-in C#, CommandGroup | Journal Python + MenuScript/ribbon |
-| Phạm vi | Active document | Display Part |
-| Tên node | `Component2.Name2` | `<part leaf>-<n>` theo từng cha, nối path (cùng dạng chuỗi) |
-| Material | DSPBR render material (face → feature → body) | Màu hiển thị NX + translucency (face → body). NX Open không cung cấp DSPBR tương đương; metallic/roughness = 0 |
-| Body trong assembly part | Không có khái niệm tương ứng | Được export ở node gốc (`include_root_part_bodies`) |
-| Normal bằng 0 | Ném lỗi | Thay bằng normal của facet, ghi log |
-| Màn hình chọn file | SaveFileDialog | UF_UI file box (`CreateFilebox`) |
+| Integration | C# COM add-in, CommandGroup | Python journal + MenuScript/ribbon |
+| Scope | Active document | Display Part |
+| Node name | `Component2.Name2` | `<part leaf>-<n>` per parent, joined as a path (same string format) |
+| Material | DSPBR render material (face → feature → body) | NX display color + translucency (face → body). NX Open provides no DSPBR equivalent; metallic/roughness = 0 |
+| Bodies in the assembly part | No equivalent concept | Exported on the root node (`include_root_part_bodies`) |
+| Zero normal | Throws an error | Replaced by the facet normal and logged |
+| File selection dialog | SaveFileDialog | UF_UI file box (`CreateFilebox`) |
 | `asset.generator` | SharpGLTF | Synode NX GLB Exporter 1.0.0 |
-| Translucency của face | – | Face không có translucency riêng thì dùng của body (giả định, chưa kiểm chứng trong NX) |
+| Face translucency | – | A face without its own translucency uses the body's value (assumption, not yet verified in NX) |
 
-## 12. Giới hạn API và license
+## 12. API and license limitations
 
-- NX có `ExtendedRealityFileCreator` (glTF) gốc nhưng **không dùng**, vì cấu trúc output (tên, node, material) khác contract của plugin SW.
-- UF_FACET cần license ASSEMBLIES. Nếu tessellate prototype thất bại, plugin thử tessellate occurrence rồi đưa về hệ tọa độ component.
-- Quy ước ma trận của `Component.GetPosition()` (hàng hay cột là trục) được xác minh bằng hình học lúc chạy, vì không có cách kiểm chứng offline.
-- Part có thể hiện trạng thái "modified" vì undo mark hoặc facet model tạm. Plugin không lưu part.
-- Student Edition và batch: cần license phù hợp. Plugin chưa được chạy trong NX thật trên máy phát triển.
+- NX has a built-in `ExtendedRealityFileCreator` (glTF) but it is **not used**, because its output structure (names, nodes, materials) differs from the SW plugin contract.
+- UF_FACET requires the ASSEMBLIES license. If tessellating the prototype fails, the plugin tessellates the occurrence and transforms it back into the component coordinate system.
+- The `Component.GetPosition()` matrix convention (whether rows or columns are the axes) is verified with geometry at run time, because it cannot be verified offline.
+- A part may appear "modified" because of undo marks or the temporary facet model. The plugin does not save the part.
+- Student Edition and batch mode: require an appropriate license. The plugin has not yet been run in a real NX session on the development machine.

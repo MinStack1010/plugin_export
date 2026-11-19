@@ -1,55 +1,55 @@
-# Hướng dẫn kiểm thử thủ công (Test 2–6)
+# Manual test guide (Tests 2–6)
 
-Điền kết quả: PASS / FAIL / NOT TESTED. Log: `%LOCALAPPDATA%\Synode\InventorExporter\logs\SynodeInventor.log`.
+Record results as: PASS / FAIL / NOT TESTED. Log: `%LOCALAPPDATA%\Synode\InventorExporter\logs\SynodeInventor.log`.
 
-Chuẩn bị: `build.ps1` → `install.ps1` → khởi động lại Inventor 2027.
+Preparation: `build.ps1` → `install.ps1` → restart Inventor 2027.
 
-## Test 2 — Nạp add-in
+## Test 2 — Add-in loading
 
-| # | Bước | Kỳ vọng | Kết quả |
+| # | Step | Expected | Result |
 |---|---|---|---|
-| 2.1 | Tools › Add-Ins | Có `Synode Inventor Exporter`, trạng thái Loaded | |
-| 2.2 | Mở hoặc tạo một Part | Có tab **Synode** › panel **Synode** › nút **Export to GLB** có icon | |
-| 2.3 | Mở hoặc tạo một Assembly | Có cùng tab/nút | |
-| 2.4 | Bỏ tick Loaded trong Add-Ins rồi tick lại | Tab biến mất rồi xuất hiện lại, không bị nhân đôi | |
-| 2.5 | Log | Có dòng `Activate completed.` | |
+| 2.1 | Tools › Add-Ins | `Synode Inventor Exporter` is listed with status Loaded | |
+| 2.2 | Open or create a Part | Tab **Synode** › panel **Synode** › button **Export to GLB** with an icon | |
+| 2.3 | Open or create an Assembly | Same tab/button | |
+| 2.4 | Untick Loaded in Add-Ins, then tick it again | The tab disappears and reappears, without duplicates | |
+| 2.5 | Log | Contains the line `Activate completed.` | |
 
 ## Test 3 — Part → GLB
 
-| # | Bước | Kỳ vọng | Kết quả |
+| # | Step | Expected | Result |
 |---|---|---|---|
-| 3.1 | Mở `.ipt` có solid → Export to GLB | Hộp thoại lưu gợi ý `<tên part>.glb` trong thư mục của part | |
-| 3.2 | Lưu | Thông báo thành công có đường dẫn, dung lượng, số tam giác | |
-| 3.3 | Mở file trong https://gltf-viewer.donmccurdy.com hoặc Windows 3D Viewer | Hiển thị đúng hình, màu, kích thước | |
-| 3.4 | `tests\SynodeInventor.Tests.exe --validate <file>` | `VALID` | |
-| 3.5 | Part chưa lưu (File › New) có body | Gợi ý tên `Part1.glb`, export thành công | |
+| 3.1 | Open an `.ipt` with a solid → Export to GLB | The save dialog suggests `<part name>.glb` in the part's folder | |
+| 3.2 | Save | Success message with path, file size and triangle count | |
+| 3.3 | Open the file in https://gltf-viewer.donmccurdy.com or Windows 3D Viewer | Correct shape, colors and size | |
+| 3.4 | Check the log entry for this export; optionally drop the file into the [Khronos glTF Validator](https://github.khronos.org/glTF-Validator/) | Log contains `Validation: GLB v2, ...` followed by `Export OK`; the Khronos validator reports no errors | |
+| 3.5 | Unsaved Part (File › New) with a body | Suggested name `Part1.glb`, export succeeds | |
 
 ## Test 4 — Assembly → GLB
 
-| # | Bước | Kỳ vọng | Kết quả |
+| # | Step | Expected | Result |
 |---|---|---|---|
-| 4.1 | Mở `.iam` có nhiều component (có sub-assembly) → Export | Thành công | |
-| 4.2 | Xem trong viewer | Vị trí/hướng các component đúng như trong Inventor, có hierarchy node | |
-| 4.3 | Component bị ẩn / suppressed | Ghi nhận hành vi (do translator gốc quyết định) | |
+| 4.1 | Open an `.iam` with many components (including a sub-assembly) → Export | Succeeds | |
+| 4.2 | View in a viewer | Component positions/orientations match Inventor, node hierarchy is present | |
+| 4.3 | Hidden / suppressed component | Record the behavior (determined by the native translator) | |
 
-## Test 5 — Trường hợp lỗi
+## Test 5 — Error cases
 
-| # | Bước | Kỳ vọng | Kết quả |
+| # | Step | Expected | Result |
 |---|---|---|---|
-| 5.1 | Bấm Export khi đang mở Drawing | Cảnh báo "not supported", không crash | |
-| 5.2 | Part rỗng (không có body) | Cảnh báo "has no solid, surface or mesh bodies" | |
-| 5.3 | Assembly rỗng | Cảnh báo "has no components" | |
-| 5.4 | Cancel trong hộp thoại lưu | Không có thông báo lỗi, status bar "export cancelled" | |
-| 5.5 | Ghi đè file `.glb` đang mở bằng chương trình khác (khoá file) | Lỗi "in use by another program" | |
-| 5.6 | Lưu vào thư mục không có quyền ghi (vd `C:\Windows`) | Lỗi "Cannot write to the output folder" | |
-| 5.7 | Gõ tên có đuôi `.gltf` | File được lưu thành `.glb` | |
-| 5.8 | Sau mỗi lỗi | Không còn file `*.synode-tmp-*.glb` trong thư mục đích | |
+| 5.1 | Click Export while a Drawing is open | "not supported" warning, no crash | |
+| 5.2 | Empty Part (no bodies) | "has no solid, surface or mesh bodies" warning | |
+| 5.3 | Empty Assembly | "has no components" warning | |
+| 5.4 | Cancel in the save dialog | No error message, status bar shows "export cancelled" | |
+| 5.5 | Overwrite a `.glb` that is open in another program (file locked) | "in use by another program" error | |
+| 5.6 | Save to a folder without write permission (e.g. `C:\Windows`) | "Cannot write to the output folder" error | |
+| 5.7 | Type a name with the `.gltf` extension | The file is saved as `.glb` | |
+| 5.8 | After each error | No `*.synode-tmp-*.glb` file remains in the destination folder | |
 
-## Test 6 — Ổn định
+## Test 6 — Stability
 
-| # | Bước | Kỳ vọng | Kết quả |
+| # | Step | Expected | Result |
 |---|---|---|---|
-| 6.1 | Export 5 lần liên tiếp cùng một model | Đều thành công, Inventor không chậm/treo | |
-| 6.2 | Export một assembly lớn | Hoàn tất, ghi nhận thời gian trong log | |
-| 6.3 | Đóng Inventor | Không lỗi; log có `Deactivate completed.` | |
-| 6.4 | `uninstall.ps1` rồi mở Inventor | Không còn tab Synode | |
+| 6.1 | Export the same model 5 times in a row | All succeed, Inventor does not slow down/hang | |
+| 6.2 | Export a large assembly | Completes, duration recorded in the log | |
+| 6.3 | Close Inventor | No errors; log contains `Deactivate completed.` | |
+| 6.4 | Run `uninstall.ps1`, then open Inventor | The Synode tab is gone | |

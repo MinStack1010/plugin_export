@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Synode.Inventor.Core
 {
-    /// <summary>Logger đơn giản được inject vào các service (không dùng trạng thái static toàn cục).</summary>
+    /// <summary>Simple logger injected into the services (no global static state).</summary>
     public interface ISynodeLogger
     {
         string? LogFilePath { get; }
@@ -16,8 +16,8 @@ namespace Synode.Inventor.Core
     }
 
     /// <summary>
-    /// Ghi log ra file văn bản UTF-8. Không ghi thông tin nhạy cảm (tên người dùng, email, token).
-    /// Lỗi khi ghi log KHÔNG được làm hỏng thao tác export: chúng được chuyển sang Trace.
+    /// Writes the log to a UTF-8 text file. Does not log sensitive information (user names, emails, tokens).
+    /// Logging failures must NOT break the export operation: they are redirected to Trace.
     /// </summary>
     public sealed class FileLogger : ISynodeLogger
     {
@@ -88,20 +88,6 @@ namespace Synode.Inventor.Core
                     Trace.Write(line);
                 }
             }
-        }
-    }
-
-    /// <summary>Logger ghi vào bộ nhớ, dùng cho kiểm thử.</summary>
-    public sealed class MemoryLogger : ISynodeLogger
-    {
-        private readonly StringBuilder _sb = new StringBuilder();
-        public string? LogFilePath => null;
-        public string Text { get { lock (_sb) return _sb.ToString(); } }
-        public void Info(string message) { lock (_sb) _sb.AppendLine("INFO  " + message); }
-        public void Warn(string message) { lock (_sb) _sb.AppendLine("WARN  " + message); }
-        public void Error(string message, Exception? exception = null)
-        {
-            lock (_sb) _sb.AppendLine("ERROR " + message + (exception != null ? " :: " + exception.Message : string.Empty));
         }
     }
 }

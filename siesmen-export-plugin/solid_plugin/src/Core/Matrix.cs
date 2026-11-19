@@ -3,9 +3,9 @@ using System;
 namespace SynodeExporter.Core
 {
     /// <summary>
-    /// Ma trận 4x4 dạng mảng 16 float theo thứ tự System.Numerics.Matrix4x4
-    /// (row-vector: hàng 1..3 = trục X, Y, Z đã xoay; hàng 4 = tịnh tiến).
-    /// Bố cục bộ nhớ này trùng với "matrix" (column-major) của glTF.
+    /// 4x4 matrix stored as an array of 16 floats in System.Numerics.Matrix4x4 order
+    /// (row-vector: rows 1..3 = rotated X, Y, Z axes; row 4 = translation).
+    /// This memory layout is identical to the glTF "matrix" (column-major).
     /// </summary>
     public static class Mat4
     {
@@ -14,7 +14,7 @@ namespace SynodeExporter.Core
             return new float[] { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
         }
 
-        /// <summary>So sánh chính xác với ma trận đơn vị (SharpGLTF bỏ "matrix" khi LocalTransform == Identity).</summary>
+        /// <summary>Exact comparison with the identity matrix (SharpGLTF omits "matrix" when LocalTransform == Identity).</summary>
         public static bool IsIdentity(float[] m)
         {
             if (m == null || m.Length != 16)
@@ -48,7 +48,7 @@ namespace SynodeExporter.Core
             return true;
         }
 
-        /// <summary>Tích a*b theo quy ước row-vector (áp dụng a trước rồi b).</summary>
+        /// <summary>Product a*b in the row-vector convention (applies a first, then b).</summary>
         public static double[] Multiply(double[] a, double[] b)
         {
             var r = new double[16];
@@ -80,7 +80,7 @@ namespace SynodeExporter.Core
             return r;
         }
 
-        /// <summary>Biến đổi điểm (row-vector * M).</summary>
+        /// <summary>Transforms a point (row-vector * M).</summary>
         public static double[] TransformPoint(double[] m, double x, double y, double z)
         {
             return new[]
@@ -102,26 +102,26 @@ namespace SynodeExporter.Core
         }
     }
 
-    /// <summary>Kết quả chuẩn hóa ma trận Occurrence.GetMatrix của Solid Edge.</summary>
+    /// <summary>Result of normalizing a Solid Edge Occurrence.GetMatrix matrix.</summary>
     public enum SolidEdgeMatrixLayout
     {
-        /// <summary>Tịnh tiến ở phần tử [12..14] (row-vector, giống Matrix4x4) - dùng trực tiếp.</summary>
+        /// <summary>Translation in elements [12..14] (row-vector, like Matrix4x4) - used directly.</summary>
         TranslationLast,
-        /// <summary>Tịnh tiến ở phần tử [3], [7], [11] (column-vector) - cần chuyển vị.</summary>
+        /// <summary>Translation in elements [3], [7], [11] (column-vector) - must be transposed.</summary>
         TranslationInColumn
     }
 
     /// <summary>
-    /// Chuyển ma trận 16 double của Occurrence.GetMatrix sang Matrix4x4/glTF.
-    /// Bố cục mảng của Solid Edge không có trong tài liệu cài đặt (SESDK.chm
-    /// không đi kèm), nên bố cục được xác định lúc chạy: vị trí của phần tịnh
-    /// tiến được đối chiếu với gốc tọa độ trả về bởi Occurrence.GetTransform.
+    /// Converts the 16-double matrix of Occurrence.GetMatrix to Matrix4x4/glTF.
+    /// The Solid Edge array layout is not covered by the installed documentation (SESDK.chm
+    /// is not shipped), so the layout is determined at run time: the position of the
+    /// translation part is compared with the origin returned by Occurrence.GetTransform.
     /// </summary>
     public static class SolidEdgeMatrix
     {
         /// <summary>
-        /// Xác định bố cục. Trả về false khi không thể phân biệt (ví dụ ma trận
-        /// chỉ xoay, không tịnh tiến) - khi đó <paramref name="layout"/> = TranslationLast.
+        /// Determines the layout. Returns false when the layouts cannot be distinguished (e.g. a
+        /// rotation-only matrix without translation) - <paramref name="layout"/> is then TranslationLast.
         /// </summary>
         public static bool TryDetectLayout(double[] m, double[] origin, out SolidEdgeMatrixLayout layout)
         {
@@ -144,7 +144,7 @@ namespace SynodeExporter.Core
                 }
             }
 
-            // Ma trận affine có (0,0,0,1) theo một trong hai cách bố trí.
+            // An affine matrix has (0,0,0,1) in one of the two layouts.
             bool lastIsAffine = m[3] == 0 && m[7] == 0 && m[11] == 0;
             bool columnIsAffine = m[12] == 0 && m[13] == 0 && m[14] == 0;
             if (lastIsAffine != columnIsAffine)
@@ -156,8 +156,8 @@ namespace SynodeExporter.Core
         }
 
         /// <summary>
-        /// Trả về ma trận double theo thứ tự Matrix4x4 (tịnh tiến ở [12..14]).
-        /// <paramref name="fallback"/> được dùng khi bố cục không thể xác định từ chính ma trận này.
+        /// Returns the double matrix in Matrix4x4 order (translation in [12..14]).
+        /// <paramref name="fallback"/> is used when the layout cannot be determined from this matrix itself.
         /// </summary>
         public static double[] Normalize(double[] m, double[] origin, SolidEdgeMatrixLayout fallback, out SolidEdgeMatrixLayout layout, out bool detected)
         {

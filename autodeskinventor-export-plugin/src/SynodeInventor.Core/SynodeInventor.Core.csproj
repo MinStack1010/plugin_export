@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Synode Inventor Exporter - phần lõi KHÔNG phụ thuộc Inventor API:
-    kiểm tra GLB, xử lý đường dẫn xuất, logging, mã lỗi.
-    Mã nguồn của project này cũng được biên dịch (liên kết) thẳng vào add-in để
-    add-in chỉ là MỘT DLL (tránh rủi ro phân giải dependency trong Inventor).
+    Synode Inventor Exporter - core library with NO dependency on the Inventor API:
+    GLB validation, export path handling, logging, error codes.
+    The sources of this project are also compiled (linked) directly into the add-in so that
+    the add-in is a SINGLE DLL (avoids dependency resolution risks inside Inventor).
   -->
 
   <PropertyGroup>

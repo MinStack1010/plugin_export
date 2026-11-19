@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Synode Inventor Exporter - add-in cho Autodesk Inventor Professional 2027.
-    Inventor nạp add-in qua file manifest .addin (KHÔNG cần RegAsm / đăng ký COM vào registry).
-    Đầu ra: MỘT DLL duy nhất SynodeInventor.AddIn.dll (mã nguồn Core được biên dịch kèm).
-    Không dùng NuGet package nào, không phụ thuộc WinForms/WPF.
+    Synode Inventor Exporter - add-in for Autodesk Inventor Professional 2027.
+    Inventor loads the add-in through the .addin manifest file (NO RegAsm / COM registration in the registry).
+    Output: a SINGLE DLL, SynodeInventor.AddIn.dll (the Core sources are compiled into it).
+    No NuGet packages, no dependency on WinForms/WPF.
   -->
 
   <PropertyGroup>
@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Interop do Inventor 2027 cài sẵn; Inventor tự cung cấp lúc chạy nên Private=false (không copy). -->
+    <!-- Interop assemblies installed with Inventor 2027; Inventor provides them at runtime, so Private=false (not copied). -->
     <Reference Include="Autodesk.Inventor.Interop">
       <HintPath>$(InventorBinDir)\Public Assemblies\Autodesk.Inventor.Interop.dll</HintPath>
       <Private>false</Private>

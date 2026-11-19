@@ -7,7 +7,7 @@ using System.Text;
 namespace Synode.Inventor.Core
 {
     /// <summary>
-    /// Xử lý đường dẫn file đầu ra (thuần .NET, không phụ thuộc Inventor => unit test được).
+    /// Output file path handling (pure .NET, no dependency on Inventor => unit-testable).
     /// </summary>
     public static class ExportPathHelper
     {
@@ -15,7 +15,7 @@ namespace Synode.Inventor.Core
         public const string DefaultBaseName = "inventor-export";
         public const string TempMarker = ".synode-tmp-";
 
-        /// <summary>Tên file gợi ý: tên tài liệu (bỏ phần mở rộng) + ".glb".</summary>
+        /// <summary>Suggested file name: document name (without extension) + ".glb".</summary>
         public static string SuggestFileName(string? fullFileName, string? displayName)
         {
             string? baseName = null;
@@ -38,7 +38,7 @@ namespace Synode.Inventor.Core
             return baseName + GlbExtension;
         }
 
-        /// <summary>Thư mục gợi ý: thư mục chứa tài liệu nếu có, ngược lại thư mục Documents.</summary>
+        /// <summary>Suggested folder: the document's folder if available, otherwise the Documents folder.</summary>
         public static string SuggestDirectory(string? fullFileName)
         {
             if (!string.IsNullOrWhiteSpace(fullFileName))
@@ -50,13 +50,13 @@ namespace Synode.Inventor.Core
                 }
                 catch (ArgumentException)
                 {
-                    // Đường dẫn tài liệu không hợp lệ -> dùng Documents.
+                    // Invalid document path -> use Documents.
                 }
             }
             return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         }
 
-        /// <summary>Thay ký tự không hợp lệ trong tên file bằng '_' và cắt khoảng trắng/dấu chấm ở cuối.</summary>
+        /// <summary>Replaces invalid file name characters with '_' and trims trailing spaces/dots.</summary>
         public static string SanitizeFileName(string name)
         {
             if (string.IsNullOrEmpty(name)) return string.Empty;
@@ -70,8 +70,8 @@ namespace Synode.Inventor.Core
         }
 
         /// <summary>
-        /// Chuẩn hoá đường dẫn người dùng chọn: bắt buộc tuyệt đối, phần mở rộng ".glb"
-        /// (".gltf" hoặc phần mở rộng khác sẽ được thay bằng ".glb"), thư mục phải tồn tại.
+        /// Normalizes the path chosen by the user: must be absolute, extension ".glb"
+        /// (".gltf" or any other extension is replaced with ".glb"), and the folder must exist.
         /// </summary>
         public static string NormalizeOutputPath(string? path)
         {
@@ -117,7 +117,7 @@ namespace Synode.Inventor.Core
             return full;
         }
 
-        /// <summary>Đường dẫn file tạm cùng thư mục với file đích, vẫn có đuôi ".glb" để translator xuất GLB.</summary>
+        /// <summary>Temporary file path in the same folder as the target file, still with the ".glb" extension so the translator writes GLB.</summary>
         public static string MakeTempPath(string finalPath, Guid? id = null)
         {
             string dir = Path.GetDirectoryName(finalPath) ?? throw new ExportException(ExportErrorCode.InvalidOutputPath, "Invalid output path: " + finalPath);
@@ -126,7 +126,7 @@ namespace Synode.Inventor.Core
             return Path.Combine(dir, baseName + TempMarker + token + GlbExtension);
         }
 
-        /// <summary>Kiểm tra có quyền ghi vào thư mục bằng cách tạo và xoá một file thử.</summary>
+        /// <summary>Checks write permission on the folder by creating and deleting a probe file.</summary>
         public static void EnsureDirectoryWritable(string directory)
         {
             string probe = Path.Combine(directory, ".synode-write-test-" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
@@ -143,7 +143,7 @@ namespace Synode.Inventor.Core
             }
         }
 
-        /// <summary>True nếu file đang bị tiến trình khác khoá (không mở được để ghi độc quyền).</summary>
+        /// <summary>True if the file is locked by another process (cannot be opened for exclusive write access).</summary>
         public static bool IsFileLocked(string path)
         {
             if (!File.Exists(path)) return false;
@@ -160,12 +160,12 @@ namespace Synode.Inventor.Core
             }
             catch (UnauthorizedAccessException)
             {
-                // Read-only hoặc không đủ quyền: coi như không ghi đè được.
+                // Read-only or insufficient permissions: treat as not overwritable.
                 return true;
             }
         }
 
-        /// <summary>Đưa file tạm vào vị trí đích (ghi đè nếu đã tồn tại).</summary>
+        /// <summary>Moves the temporary file to the target location (overwrites it if it already exists).</summary>
         public static void ReplaceFile(string tempPath, string finalPath)
         {
             try
@@ -174,7 +174,7 @@ namespace Synode.Inventor.Core
             }
             catch (UnauthorizedAccessException ex)
             {
-                // Windows trả "Access denied" cả khi file đích đang được mở bởi chương trình khác.
+                // Windows returns "Access denied" even when the target file is open in another program.
                 bool readOnly = File.Exists(finalPath) && (File.GetAttributes(finalPath) & FileAttributes.ReadOnly) != 0;
                 if (!readOnly && IsFileLocked(finalPath))
                 {
@@ -191,7 +191,7 @@ namespace Synode.Inventor.Core
             }
         }
 
-        /// <summary>Xoá file nếu tồn tại; trả về false (không ném lỗi) nếu không xoá được.</summary>
+        /// <summary>Deletes the file if it exists; returns false (without throwing) if it cannot be deleted.</summary>
         public static bool TryDelete(string? path, ISynodeLogger? log)
         {
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) return true;

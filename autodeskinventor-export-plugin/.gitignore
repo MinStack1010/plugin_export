@@ -6,10 +6,6 @@ dist/
 *.pdb
 *.exe
 
-# Test output
-test-output/
-TestResults/
-
 # IDE
 .vs/
 .vscode/

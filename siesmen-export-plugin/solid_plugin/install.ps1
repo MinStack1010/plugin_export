@@ -1,15 +1,15 @@
 ﻿<#
 .SYNOPSIS
-    Đăng ký COM add-in Synode Exporter cho Solid Edge 2026 (ghi registry - CẦN XÁC NHẬN).
+    Registers the Synode Exporter COM add-in for Solid Edge 2026 (writes to the registry - REQUIRES CONFIRMATION).
 .DESCRIPTION
-    * Kiểm tra: Windows/PowerShell x64, Solid Edge 2026, .NET Framework 4.8, DLL tồn tại và là x64.
-    * Hiển thị CHÍNH XÁC các khóa sẽ ghi, hỏi xác nhận (Y/N) trừ khi có -Force.
-    * Chỉ ghi CLSID {42B484DA-1593-41C3-9623-1BFAA4DA645C} và ProgId SynodeExporter.SolidEdge.AddIn.
-      Không chạm vào khóa của add-in khác, license hay cấu hình Siemens.
-    * -Scope Machine (mặc định, HKLM, cần Administrator) | CurrentUser (HKCU, thử nghiệm).
-    * -DryRun: chỉ in ra các khóa, không ghi gì.
+    * Checks: 64-bit Windows/PowerShell, Solid Edge 2026, .NET Framework 4.8, and that the DLL exists and is x64.
+    * Shows EXACTLY which keys will be written and asks for confirmation (Y/N) unless -Force is used.
+    * Only writes CLSID {42B484DA-1593-41C3-9623-1BFAA4DA645C} and ProgId SynodeExporter.SolidEdge.AddIn.
+      Does not touch keys of other add-ins, licenses or Siemens settings.
+    * -Scope Machine (default, HKLM, requires Administrator) | CurrentUser (HKCU, experimental).
+    * -DryRun: only prints the keys, writes nothing.
 .EXAMPLE
-    # PowerShell x64 "Run as Administrator":
+    # 64-bit PowerShell, "Run as Administrator":
     powershell -ExecutionPolicy Bypass -File .\install.ps1
 #>
 [CmdletBinding()]
@@ -26,56 +26,57 @@ $here = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvoca
 . (Join-Path $here 'scripts\RegistryLayout.ps1')
 if (-not $DllPath) { $DllPath = Join-Path $here 'dist\SynodeExporter.SolidEdge.dll' }
 
-Write-Host '== Kiểm tra môi trường ==' -ForegroundColor Cyan
+Write-Host '== Environment check ==' -ForegroundColor Cyan
 $envInfo = & (Join-Path $here 'scripts\Test-Environment.ps1') -SolidEdgeDir $SolidEdgeDir
 if ($envInfo.Problems.Count -gt 0 -and -not $Force) {
-    throw "Môi trường chưa đạt (xem [LOI] ở trên). Dùng -Force nếu vẫn muốn đăng ký."
+    throw "The environment does not meet the requirements (see [FAIL] above). Use -Force to register anyway."
 }
 if (-not [Environment]::Is64BitProcess) {
-    throw 'Hãy chạy bằng Windows PowerShell 64-bit (không phải PowerShell (x86)).'
+    throw 'Run this script in 64-bit Windows PowerShell (not Windows PowerShell (x86)).'
 }
 if (-not (Test-Path $DllPath)) {
-    throw "Không tìm thấy DLL: $DllPath. Hãy chạy build.ps1 trước."
+    throw "DLL not found: $DllPath. Run build.ps1 first."
 }
 $DllPath = (Resolve-Path $DllPath).Path
 $an = [Reflection.AssemblyName]::GetAssemblyName($DllPath)
 if ($an.ProcessorArchitecture -ne [Reflection.ProcessorArchitecture]::Amd64) {
-    throw "DLL không phải x64 ($($an.ProcessorArchitecture))."
+    throw "The DLL is not x64 ($($an.ProcessorArchitecture))."
 }
 
 $entries = Get-SynodeRegistryEntries -DllPath $DllPath
 $hn = Get-SynodeHiveName $Scope
 Write-Host ''
-Write-Host "Các mục registry sẽ ghi ($hn, view 64-bit):" -ForegroundColor Cyan
+Write-Host "Registry entries to be written ($hn, 64-bit view):" -ForegroundColor Cyan
 Write-SynodeEntriesPreview $entries $Scope
 
 if ($DryRun) {
     Write-Host ''
-    Write-Host 'DryRun: không ghi registry.' -ForegroundColor Yellow
+    Write-Host 'DryRun: the registry was not modified.' -ForegroundColor Yellow
     return
 }
 
 if ($Scope -eq 'Machine' -and -not (Test-SynodeIsAdmin)) {
-    throw 'Scope Machine (HKLM) cần quyền Administrator. Mở PowerShell bằng "Run as administrator".'
+    throw 'Scope Machine (HKLM) requires Administrator rights. Open PowerShell with "Run as administrator".'
 }
 
 $existing = Get-SynodeExistingCodeBase $Scope
 $newCodeBase = ([Uri]$DllPath).AbsoluteUri
 if ($null -ne $existing -and $existing -ne $newCodeBase -and -not $Force) {
-    throw "CLSID $SynodeClsid đã tồn tại trong $hn với CodeBase khác: '$existing'. Chạy uninstall.ps1 trước hoặc dùng -Force."
+    throw "CLSID $SynodeClsid already exists in $hn with a different CodeBase: '$existing'. Run uninstall.ps1 first or use -Force."
 }
 
 if (-not $Force) {
-    $answer = Read-Host "Xác nhận ghi các khóa trên vào $hn? (Y/N)"
-    if ($answer -notmatch '^(y|yes|c|co)$') { Write-Host 'Đã hủy, không thay đổi registry.' -ForegroundColor Yellow; return }
+    $answer = Read-Host "Write the keys above to $hn? (Y/N)"
+    # 'c' / 'co' are also accepted as "yes" for backward compatibility.
+    if ($answer -notmatch '^(y|yes|c|co)$') { Write-Host 'Cancelled; the registry was not modified.' -ForegroundColor Yellow; return }
 }
 
 $process = Get-Process -Name Edge -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$SolidEdgeDir*" }
-if ($process) { Write-Warning 'Solid Edge đang chạy: hãy khởi động lại Solid Edge sau khi cài đặt.' }
+if ($process) { Write-Warning 'Solid Edge is running: restart Solid Edge after the installation.' }
 
 $base = Get-SynodeHive $Scope
 try {
-    # Xóa sạch khóa cũ CỦA RIÊNG Synode (nếu có) để không còn giá trị thừa từ phiên bản trước.
+    # Remove any existing Synode-ONLY keys first so that no stale values from a previous version remain.
     foreach ($k in Get-SynodeRootKeys) { $base.DeleteSubKeyTree($k, $false) }
     foreach ($x in $entries) {
         $key = $base.CreateSubKey($x.Key)
@@ -86,12 +87,12 @@ try {
     }
 } finally { $base.Close() }
 
-# Kiểm tra lại
+# Verify the result
 $check = Get-SynodeExistingCodeBase $Scope
-if ($check -ne $newCodeBase) { throw "Kiểm tra sau khi ghi thất bại (CodeBase = '$check')." }
+if ($check -ne $newCodeBase) { throw "Post-write verification failed (CodeBase = '$check')." }
 
 Write-Host ''
-Write-Host "ĐÃ ĐĂNG KÝ Synode Exporter ($hn)." -ForegroundColor Green
+Write-Host "Synode Exporter REGISTERED ($hn)." -ForegroundColor Green
 Write-Host "  DLL: $DllPath"
-Write-Host '  Mở Solid Edge 2026 -> Tools (Công cụ) -> Add-Ins -> Add-In Manager: "Synode Exporter" phải được đánh dấu.'
-Write-Host '  Lưu ý: không di chuyển/xóa DLL khi đang đăng ký; nếu build lại vào chỗ khác, chạy lại install.ps1.'
+Write-Host '  Open Solid Edge 2026 -> Tools -> Add-Ins -> Add-In Manager: "Synode Exporter" must be checked.'
+Write-Host '  Note: do not move/delete the DLL while it is registered; if you rebuild it to another location, run install.ps1 again.'

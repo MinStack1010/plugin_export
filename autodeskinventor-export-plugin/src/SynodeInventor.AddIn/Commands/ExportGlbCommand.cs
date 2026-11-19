@@ -9,8 +9,8 @@ using Inv = global::Inventor;
 namespace Synode.Inventor.AddIn.Commands
 {
     /// <summary>
-    /// Lệnh "Export to GLB" - tương đương ExportGlbCommand của plugin SolidWorks:
-    /// kiểm tra tài liệu -> hộp thoại lưu -> export -> thông báo thành công/lỗi.
+    /// "Export to GLB" command - equivalent to ExportGlbCommand in the SolidWorks plugin:
+    /// check document -> save dialog -> export -> success/error message.
     /// </summary>
     internal sealed class ExportGlbCommand
     {
@@ -35,7 +35,7 @@ namespace Synode.Inventor.AddIn.Commands
             _log = log ?? throw new ArgumentNullException(nameof(log));
         }
 
-        /// <summary>Được gọi từ sự kiện OnExecute của nút; không bao giờ để exception thoát ra Inventor.</summary>
+        /// <summary>Called from the button's OnExecute event; never lets an exception escape into Inventor.</summary>
         public void Execute()
         {
             if (_running)

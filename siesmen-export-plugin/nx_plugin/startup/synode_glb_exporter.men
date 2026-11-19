@@ -8,7 +8,7 @@
 !  NOTE: syntax follows the NX 2606 menu files in UGII\menus (VERSION 120,
 !  EDIT UG_GATEWAY_MAIN_MENUBAR, BEFORE ... END_OF_BEFORE, MENU ... END_OF_MENU).
 !  A Python journal as ACTIONS target must be confirmed in your NX session
-!  (see README, section "Tich hop menu/ribbon").
+!  (see README, section "Menu/ribbon integration").
 ! ---------------------------------------------------------------------------
 
 VERSION 120

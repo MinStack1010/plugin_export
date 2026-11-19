@@ -6,9 +6,9 @@ using System.Text;
 namespace SynodeExporter.AddIn
 {
     /// <summary>
-    /// Ghi log vào %LOCALAPPDATA%\SynodeExporter\SolidEdge\logs\SynodeSolidEdge.log.
-    /// (Plugin SW ghi SynodeSolidWorks.log ra Desktop; ở đây dùng LocalAppData để
-    /// không làm bẩn Desktop.) Lỗi ghi log không bao giờ làm hỏng Solid Edge.
+    /// Writes the log to %LOCALAPPDATA%\SynodeExporter\SolidEdge\logs\SynodeSolidEdge.log.
+    /// (The SW plugin writes SynodeSolidWorks.log to the Desktop; LocalAppData is used here
+    /// to keep the Desktop clean.) Logging failures never break Solid Edge.
     /// </summary>
     internal static class Logger
     {
@@ -68,7 +68,7 @@ namespace SynodeExporter.AddIn
             }
             catch
             {
-                // Không bao giờ ném lỗi từ logger.
+                // Never throw from the logger.
             }
         }
     }
