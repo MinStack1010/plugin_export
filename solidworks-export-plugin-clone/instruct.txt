@@ -1,0 +1,25 @@
+Hi Brandon,
+
+Here is the ZIP file for my Visual Studio solution.
+
+If you want to test it, you first need to make sure you have .NET Framework 4.8 installed. Then, in VS, you need to build the DLL file of the project (Build > Build PluginSynode). After that, using the Developer Command Prompt for VS (it might also work in the regular command prompt of Windows, but I'm not sure) you have to enter this command:
+
+    regasm "Path of the DLL file" /codebase
+
+If it doesn't work, it's possible you need to specify directly the EXE file you want to execute to register the plugin, like this:
+
+    "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\RegAsm.exe" "Path of the DLL file" /codebase
+
+The version folder might be different for you, but it must be the one used for .NET Framework 4.0 or above (in my case it was v4.0.30319).
+
+This will register the plugin with SolidWorks automatically and will not work without SolidWorks. The version of SolidWorks shouldn't matter.
+
+To uninstall the plugin, it's the same commands but use /unregister instead of /codebase.
+
+If you encounter any problems, just let me know. Even though I'll be on vacation, I can still answer any questions you might have. I might just not answer you very quickly.
+
+
+
+NOTE(brandon):
+Ran x64 vs2022 command console as admin to register .dll:
+regasm c:\users\brand\dev\_synode\PluginSynode-main\PluginSynode-main\bin\Debug\PluginSynode.dll /codebase
